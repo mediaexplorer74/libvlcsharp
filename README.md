@@ -1,10 +1,11 @@
- # LibVLCSharp for UWP (W10M)
+ # LibVLCSharp for UWP (W10M) v1.0.1.0
 
 My fork of famous "VLCSharp" project for my own micro-RnD...
 
 
 ## Screenshots
-![](/Images/shot01.png)
+![x64](/Images/shot01.png)
+![ARM](/Images/shot02.png)
 
 ## About
 The original WinBeta_Video is a very simple Windows 10 app that displays and plays YouTube videos 
@@ -15,13 +16,13 @@ So, I'll try to fix all "Video not playing" issues.
 
 ## Status
 - Downshifted from DX11 to DX9 (hellow, my oooldest 14-year Sony Vaio notebook )))
-- [Test online video](https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4) seems to be ok!
+- [Test online video](https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4) seems to be ok (on PC & WinPhone).
 
 
 ## Tech moments
 - UWP platform (targets: x86, x64, ARM)
-- Win. SDK build: 16299 
-- Min. Win. SDK build: 14393
+- Win. SDK build: 19041
+- Min. Win. SDK build: 15063
 
 
 ## To Do

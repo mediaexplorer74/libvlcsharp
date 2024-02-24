@@ -121,7 +121,7 @@ namespace LibVLCSharp.Shared.Helpers
                 nativeRef = getRef();
                 if (nativeRef == IntPtr.Zero)
                 {
-#if NETSTANDARD1_1 || NET40
+#if NETSTANDARD1_4 || NET40
                     return new TU[0];
 #else
                     return Array.Empty<TU>();
@@ -177,7 +177,7 @@ namespace LibVLCSharp.Shared.Helpers
                 count = getRef(nativeRef, out arrayPtr);
                 if(count == 0)
                 {
-#if NETSTANDARD1_1 || NET40
+#if NETSTANDARD1_4 || NET40
                     return new TU[0];
 #else
                     return Array.Empty<TU>();
@@ -234,7 +234,7 @@ namespace LibVLCSharp.Shared.Helpers
 
                 if (count == 0)
                 {
-#if NETSTANDARD1_1 || NET40
+#if NETSTANDARD1_4 || NET40
                     return new TU[0];
 #else
                     return Array.Empty<TU>();
@@ -293,7 +293,7 @@ namespace LibVLCSharp.Shared.Helpers
                 var count = (int)countLong;
                 if (count == 0)
                 {
-#if NETSTANDARD1_1 || NET40
+#if NETSTANDARD1_4 || NET40
                     return new TU[0];
 #else
                     return Array.Empty<TU>();
@@ -354,7 +354,7 @@ namespace LibVLCSharp.Shared.Helpers
         /// <returns></returns>
         internal static T PtrToStructure<T>(IntPtr ptr)
         {
-#if NETSTANDARD1_1 || NET40
+#if NETSTANDARD1_4 || NET40
             return (T)Marshal.PtrToStructure(ptr, typeof(T));
 #else
             return Marshal.PtrToStructure<T>(ptr);
@@ -485,7 +485,7 @@ namespace LibVLCSharp.Shared.Helpers
 
         internal static int SizeOf<T>(T structure)
         {
-#if NETSTANDARD1_1 || NET40
+#if NETSTANDARD1_4 || NET40
             return Marshal.SizeOf(typeof(T));
 #else
             return Marshal.SizeOf<T>(structure);

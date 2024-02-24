@@ -74,7 +74,7 @@ namespace LibVLCSharp.Shared
 #elif NET || NETSTANDARD
             InitializeDesktop(libvlcDirectoryPath);
 #endif
-#if !UWP10_0 && !NETSTANDARD1_1
+#if !UWP10_0 && !NETSTANDARD1_4
             EnsureVersionsMatch();
 #endif
         }
@@ -96,18 +96,18 @@ namespace LibVLCSharp.Shared
             Native.SetErrorMode(oldMode | ErrorModes.SEM_FAILCRITICALERRORS | ErrorModes.SEM_NOOPENFILEERRORBOX);
         }
 
-#if !UWP10_0 && !NETSTANDARD1_1
+#if !UWP10_0 && !NETSTANDARD1_4
         /// <summary>
         /// Checks whether the major version of LibVLC and LibVLCSharp match <para/>
         /// Throws an NotSupportedException if the major versions mismatch
         /// </summary>
         static void EnsureVersionsMatch()
         {
-            var libvlcMajorVersion = int.Parse(Native.LibVLCVersion().FromUtf8().Split('.').First());
-            var libvlcsharpMajorVersion = Assembly.GetExecutingAssembly().GetName().Version.Major;
-            if(libvlcMajorVersion != libvlcsharpMajorVersion)
-                throw new VLCException($"Version mismatch between LibVLC {libvlcMajorVersion} and LibVLCSharp {libvlcsharpMajorVersion}. " +
-                    $"They must share the same major version number");
+            //var libvlcMajorVersion = int.Parse(Native.LibVLCVersion().FromUtf8().Split('.').First());
+            //var libvlcsharpMajorVersion = Assembly.GetExecutingAssembly().GetName().Version.Major;
+            //if(libvlcMajorVersion != libvlcsharpMajorVersion)
+            //    throw new VLCException($"Version mismatch between LibVLC {libvlcMajorVersion} and LibVLCSharp {libvlcsharpMajorVersion}. " +
+            //        $"They must share the same major version number");
         }
 #endif
 #if ANDROID
@@ -141,7 +141,7 @@ namespace LibVLCSharp.Shared
                 // Initializes X threads before calling VLC. This is required for vlc plugins like the VDPAU hardware acceleration plugin.
                 if (Native.XInitThreads() == 0)
                 {
-#if !NETSTANDARD1_1
+#if !NETSTANDARD1_4
                     Trace.WriteLine("XInitThreads failed");
 #endif
                 }
@@ -170,7 +170,7 @@ namespace LibVLCSharp.Shared
                 return;
             }
 
-#if !NETSTANDARD1_1
+#if !NETSTANDARD1_4
             var paths = ComputeLibVLCSearchPaths();
 
             foreach(var path in paths)
@@ -190,7 +190,7 @@ namespace LibVLCSharp.Shared
 #endif
         }
 
-#if !NETSTANDARD1_1
+#if !NETSTANDARD1_4
         static List<(string libvlccore, string libvlc)> ComputeLibVLCSearchPaths()
         {
             var paths = new List<(string, string)>();
@@ -246,7 +246,7 @@ namespace LibVLCSharp.Shared
 
         static void Log(string message)
         {
-#if !NETSTANDARD1_1
+#if !NETSTANDARD1_4
             Trace.WriteLine(message);
 #else
             Debug.WriteLine(message);
@@ -258,7 +258,7 @@ namespace LibVLCSharp.Shared
             handle = IntPtr.Zero;
             Log($"Loading {nativeLibraryPath}");
 
-#if !NETSTANDARD1_1
+#if !NETSTANDARD1_4
             if (!File.Exists(nativeLibraryPath))
             {
                 Log($"Cannot find {nativeLibraryPath}");
