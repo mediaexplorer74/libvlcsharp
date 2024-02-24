@@ -6,9 +6,6 @@ using LibVLCSharp.Shared.Structures;
 
 namespace LibVLCSharp.Shared
 {
-    /// <summary>
-    /// The MediaPlayer type is used to control playback, set renderers, provide events and much more
-    /// </summary>
     public class MediaPlayer : Internal
     {
         readonly struct Native
@@ -67,7 +64,7 @@ namespace LibVLCSharp.Shared
                 EntryPoint = "libvlc_media_player_stop")]
             internal static extern void LibVLCMediaPlayerStop(IntPtr mediaPlayer);
 
-#if APPLE || DESKTOP
+#if APPLE || NET || NETSTANDARD
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_media_player_set_nsobject")]
             internal static extern void LibVLCMediaPlayerSetNsobject(IntPtr mediaPlayer, IntPtr drawable);
@@ -76,7 +73,7 @@ namespace LibVLCSharp.Shared
                 EntryPoint = "libvlc_media_player_get_nsobject")]
             internal static extern IntPtr LibVLCMediaPlayerGetNsobject(IntPtr mediaPlayer);
 #endif
-#if DESKTOP
+#if NET || NETSTANDARD
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_media_player_set_xwindow")]
             internal static extern void LibVLCMediaPlayerSetXwindow(IntPtr mediaPlayer, uint drawable);
@@ -246,18 +243,21 @@ namespace LibVLCSharp.Shared
                 EntryPoint = "libvlc_media_player_set_equalizer")]
             internal static extern int LibVLCMediaPlayerSetEqualizer(IntPtr mediaPlayer, IntPtr equalizer);
 
+
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_audio_set_callbacks")]
-            internal static extern void LibVLCAudioSetCallbacks(IntPtr mediaPlayer, LibVLCAudioPlayCb play, LibVLCAudioPauseCb? pause,
-                LibVLCAudioResumeCb? resume, LibVLCAudioFlushCb? flush, LibVLCAudioDrainCb? drain, IntPtr opaque);
+            internal static extern void LibVLCAudioSetCallbacks(IntPtr mediaPlayer, LibVLCAudioPlayCb play, LibVLCAudioPauseCb pause,
+                LibVLCAudioResumeCb resume, LibVLCAudioFlushCb flush, LibVLCAudioDrainCb drain, IntPtr opaque);
+
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_audio_set_volume_callback")]
-            internal static extern void LibVLCAudioSetVolumeCallback(IntPtr mediaPlayer, LibVLCVolumeCb? volumeCallback);
+            internal static extern void LibVLCAudioSetVolumeCallback(IntPtr mediaPlayer, LibVLCVolumeCb volumeCallback);
+
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_audio_set_format_callbacks")]
-            internal static extern void LibVLCAudioSetFormatCallbacks(IntPtr mediaPlayer, LibVLCAudioSetupCb setup, LibVLCAudioCleanupCb? cleanup);
+            internal static extern void LibVLCAudioSetFormatCallbacks(IntPtr mediaPlayer, LibVLCAudioSetupCb setup, LibVLCAudioCleanupCb cleanup);
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_audio_set_format")]
@@ -345,20 +345,22 @@ namespace LibVLCSharp.Shared
                 EntryPoint = "libvlc_audio_set_delay")]
             internal static extern int LibVLCAudioSetDelay(IntPtr mediaPlayer, long delay);
 
+
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_video_set_callbacks")]
             internal static extern void LibVLCVideoSetCallbacks(IntPtr mediaPlayer, LibVLCVideoLockCb lockCallback,
-                LibVLCVideoUnlockCb? unlock, LibVLCVideoDisplayCb? display, IntPtr opaque);
+                LibVLCVideoUnlockCb unlock, LibVLCVideoDisplayCb display, IntPtr opaque);
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_video_set_format")]
             internal static extern void LibVLCVideoSetFormat(IntPtr mediaPlayer, IntPtr chroma,
                 uint width, uint height, uint pitch);
 
+
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_video_set_format_callbacks")]
             internal static extern void LibVLCVideoSetFormatCallbacks(IntPtr mediaPlayer, LibVLCVideoFormatCb setup,
-                LibVLCVideoCleanupCb? cleanup);
+                LibVLCVideoCleanupCb cleanup);
 
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
@@ -452,7 +454,7 @@ namespace LibVLCSharp.Shared
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_media_player_get_full_chapter_descriptions")]
-            internal static extern int LibVLCMediaPlayerGetFullChapterDescriptions(IntPtr mediaPlayer, int titleIndex, out IntPtr chapters);
+            internal static extern int LibVLCMediaPlayerGetFullChapterDescriptions(IntPtr mediaPlayer, int titleIndex, ref IntPtr chapters);
 
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
@@ -552,7 +554,7 @@ namespace LibVLCSharp.Shared
             internal static extern int LibVLCMediaPlayerAddSlave(IntPtr mediaPlayer, MediaSlaveType mediaSlaveType,
                 IntPtr uri, bool selectWhenloaded);
 
-            [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
+            [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl, 
                 EntryPoint = "libvlc_video_new_viewpoint")]
             internal static extern IntPtr LibVLCVideoNewViewpoint();
 
@@ -592,14 +594,17 @@ namespace LibVLCSharp.Shared
                 EntryPoint = "libvlc_media_player_set_android_context")]
             internal static extern void LibVLCMediaPlayerSetAndroidContext(IntPtr mediaPlayer, IntPtr aWindow);
 #endif
+
+#if UNITY_ANDROID
+            [DllImport(Constants.UnityPlugin)]
+            internal static extern IntPtr CreateAndInitMediaPlayer(IntPtr libvlc);
+
+            [DllImport(Constants.UnityPlugin, EntryPoint = "getVideoFrameVLC")]
+            internal static extern IntPtr GetFrame(IntPtr mediaPlayer, out bool updated);
+#endif
         }
 
-        MediaPlayerEventManager? _eventManager;
-
-        /// <summary>
-        /// The GCHandle to be passed to callbacks as userData
-        /// </summary>
-        GCHandle _gcHandle;
+        MediaPlayerEventManager _eventManager;
 
         /// <summary>Create an empty Media Player object</summary>
         /// <param name="libVLC">
@@ -608,11 +613,20 @@ namespace LibVLCSharp.Shared
         /// </param>
         /// <returns>a new media player object, or NULL on error.</returns>
         public MediaPlayer(LibVLC libVLC)
-            : base(() => Native.LibVLCMediaPlayerNew(libVLC.NativeReference), Native.LibVLCMediaPlayerRelease)
+            : base(() =>
+#if UNITY_ANDROID
+            /// This is a helper method to ease creating and configuring a MediaPlayer on Unity.Android.
+            /// By just passing it a LibVLC object, it handles JNI_OnLoad, AWindow creation for off screen HW and setting the 
+            /// Android Context. The C# JNI bindings from Xamarin.Android (Java.Interop) differ from the Unity.Android way.
+            Native.CreateAndInitMediaPlayer(libVLC.NativeReference),
+#else
+            Native.LibVLCMediaPlayerNew(libVLC.NativeReference),
+#endif
+            Native.LibVLCMediaPlayerRelease)
         {
-            _gcHandle = GCHandle.Alloc(this);
         }
 
+#if !UNITY_ANDROID
         /// <summary>Create a Media Player object from a Media</summary>
         /// <param name="media">
         /// <para>the media. Afterwards the p_md can be safely</para>
@@ -622,16 +636,15 @@ namespace LibVLCSharp.Shared
         public MediaPlayer(Media media)
             : base(() => Native.LibVLCMediaPlayerNewFromMedia(media.NativeReference), Native.LibVLCMediaPlayerRelease)
         {
-            _gcHandle = GCHandle.Alloc(this);
         }
-
+#endif
         /// <summary>
         /// Get the media used by the media_player.
-        /// Set the media that will be used by the media_player.
+        /// Set the media that will be used by the media_player. 
         /// If any, previous md will be released.
         /// Note: It is safe to release the Media on the C# side after it's been set on the MediaPlayer successfully
         /// </summary>
-        public Media? Media
+        public Media Media
         {
             get
             {
@@ -653,12 +666,7 @@ namespace LibVLCSharp.Shared
         /// <returns>true if successful</returns>
         public bool Play()
         {
-            var media = Media;
-            if(media != null)
-            {
-                media.AddOption(Configuration);
-                media.Dispose();
-            }
+            Media?.AddOption(Configuration);
             return Native.LibVLCMediaPlayerPlay(NativeReference) == 0;
         }
 
@@ -693,7 +701,7 @@ namespace LibVLCSharp.Shared
         /// </summary>
         public void Stop() => Native.LibVLCMediaPlayerStop(NativeReference);
 
-#if APPLE || DESKTOP
+#if APPLE || NET || NETSTANDARD
         /// <summary>
         /// Get the NSView handler previously set
         /// return the NSView handler or 0 if none where set
@@ -719,18 +727,18 @@ namespace LibVLCSharp.Shared
         }
 #endif
 
-#if DESKTOP
+#if NET || NETSTANDARD
         /// <summary>
-        /// Set an X Window System drawable where the media player should render its video output.
-        /// The call takes effect when the playback starts. If it is already started, it might need to be stopped before changes apply.
+        /// Set an X Window System drawable where the media player should render its video output. 
+        /// The call takes effect when the playback starts. If it is already started, it might need to be stopped before changes apply. 
         /// If LibVLC was built without X11 output support, then this function has no effects.
-        /// By default, LibVLC will capture input events on the video rendering area.
-        /// Use libvlc_video_set_mouse_input() and libvlc_video_set_key_input() to disable that and deliver events to the parent window / to the application instead.
+        /// By default, LibVLC will capture input events on the video rendering area. 
+        /// Use libvlc_video_set_mouse_input() and libvlc_video_set_key_input() to disable that and deliver events to the parent window / to the application instead. 
         /// By design, the X11 protocol delivers input events to only one recipient.
         /// <para></para>
         /// Warning:
         /// The application must call the XInitThreads() function from Xlib before libvlc_new(), and before any call to XOpenDisplay() directly
-        /// or via any other library.Failure to call XInitThreads() will seriously impede LibVLC performance.
+        /// or via any other library.Failure to call XInitThreads() will seriously impede LibVLC performance. 
         /// Calling XOpenDisplay() before XInitThreads() will eventually crash the process. That is a limitation of Xlib.
         /// uint: X11 window ID
         /// </summary>
@@ -782,13 +790,6 @@ namespace LibVLCSharp.Shared
             get => Native.LibVLCMediaPlayerGetPosition(NativeReference);
             set => Native.LibVLCMediaPlayerSetPosition(NativeReference, value);
         }
-
-        /// <summary>
-        /// Set the movie time. This has no effect if no media is being
-        /// played. Not all formats and protocols support this.
-        /// </summary>
-        /// <param name="time">the movie time to seek to</param>
-        public void SeekTo(TimeSpan time) => Time = (long)time.TotalMilliseconds;
 
         /// <summary>
         /// Set movie chapter (if applicable).
@@ -853,7 +854,7 @@ namespace LibVLCSharp.Shared
         /// <summary>
         /// Get the requested movie play rate.
         /// warning
-        /// <para></para>
+        /// <para></para> 
         /// Depending on the underlying media, the requested rate may be
         /// different from the real playback rate.
         /// </summary>
@@ -877,13 +878,17 @@ namespace LibVLCSharp.Shared
         /// </summary>
         public VLCState State => Native.LibVLCMediaPlayerGetState(NativeReference);
 
+        float _fps;
         /// <summary>
         /// Get the frames per second (fps) for this playing movie, or 0 if unspecified
         /// </summary>
-        public float Fps => Native.LibVLCMediaPlayerGetFps(NativeReference);
+        public float Fps
+        {
+            get { _fps = Native.LibVLCMediaPlayerGetFps(NativeReference); return _fps; }
+        }
 
         /// <summary>
-        /// Get the number of video outputs
+        /// Get the number of video outputs 
         /// </summary>
         public uint VoutCount => Native.LibVLCMediaPlayerHasVout(NativeReference);
 
@@ -944,13 +949,10 @@ namespace LibVLCSharp.Shared
         }
 
         /// <summary>
-        /// Enable or disable fullscreen.
-        /// Warning, TL;DR version : Unless you know what you're doing, don't use this.
-        /// Put your VideoView inside a fullscreen control instead, refer to your platform documentation.
-        /// <para></para>
-        /// Warning, long version :
+        /// Enable or disable fullscreen. 
+        /// Warning
         /// With most window managers, only a top-level windows can be in full-screen mode.
-        /// Hence, this function will not operate properly if libvlc_media_player_set_xwindow() was used to embed the video in a non-top-level window.
+        /// Hence, this function will not operate properly if libvlc_media_player_set_xwindow() was used to embed the video in a non-top-level window. 
         /// In that case, the embedding window must be reparented to the root window before fullscreen mode is enabled.
         /// You will want to reparent it back to its normal parent when disabling fullscreen.
         /// <para></para>
@@ -989,15 +991,8 @@ namespace LibVLCSharp.Shared
         /// <returns>true on success, false otherwise.</returns>
         public bool UnsetEqualizer() => Native.LibVLCMediaPlayerSetEqualizer(NativeReference, IntPtr.Zero) == 0;
 
-        LibVLCAudioPlayCb? _audioPlayCb;
-        LibVLCAudioPauseCb? _audioPauseCb;
-        LibVLCAudioResumeCb? _audioResumeCb;
-        LibVLCAudioFlushCb? _audioFlushCb;
-        LibVLCAudioDrainCb? _audioDrainCb;
-        IntPtr _audioUserData = IntPtr.Zero;
-
         /// <summary>
-        /// Sets callbacks and private data for decoded audio.
+        /// Sets callbacks and private data for decoded audio. 
         /// Use libvlc_audio_set_format() or libvlc_audio_set_format_callbacks() to configure the decoded audio format.
         /// Note: The audio callbacks override any other audio output mechanism. If the callbacks are set, LibVLC will not output audio in any way.
         /// </summary>
@@ -1006,58 +1001,37 @@ namespace LibVLCSharp.Shared
         /// <param name="resumeCb">callback to resume playback (or NULL to ignore) </param>
         /// <param name="flushCb">callback to flush audio buffers (or NULL to ignore) </param>
         /// <param name="drainCb">callback to drain audio buffers (or NULL to ignore) </param>
-        public void SetAudioCallbacks(LibVLCAudioPlayCb playCb, LibVLCAudioPauseCb? pauseCb,
-            LibVLCAudioResumeCb? resumeCb, LibVLCAudioFlushCb? flushCb,
-            LibVLCAudioDrainCb? drainCb)
+        public void SetAudioCallbacks(LibVLCAudioPlayCb playCb, LibVLCAudioPauseCb pauseCb,
+            LibVLCAudioResumeCb resumeCb, LibVLCAudioFlushCb flushCb,
+            LibVLCAudioDrainCb drainCb)
         {
-            _audioPlayCb = playCb ?? throw new ArgumentNullException(nameof(playCb));
-            _audioPauseCb = pauseCb;
-            _audioResumeCb = resumeCb;
-            _audioFlushCb = flushCb;
-            _audioDrainCb = drainCb;
-
-            Native.LibVLCAudioSetCallbacks(
-                NativeReference,
-                AudioPlayCallbackHandle,
-                (pauseCb == null) ? null : AudioPauseCallbackHandle,
-                (resumeCb == null) ? null : AudioResumeCallbackHandle,
-                (flushCb == null) ? null : AudioFlushCallbackHandle,
-                (drainCb == null) ? null : AudioDrainCallbackHandle,
-                GCHandle.ToIntPtr(_gcHandle));
+            Native.LibVLCAudioSetCallbacks(NativeReference, playCb, pauseCb, resumeCb, flushCb, drainCb, IntPtr.Zero);
         }
 
-        LibVLCVolumeCb? _audioVolumeCb;
-
         /// <summary>
-        /// Set callbacks and private data for decoded audio.
-        /// This only works in combination with libvlc_audio_set_callbacks().
+        /// Set callbacks and private data for decoded audio. 
+        /// This only works in combination with libvlc_audio_set_callbacks(). 
         /// Use libvlc_audio_set_format() or libvlc_audio_set_format_callbacks() to configure the decoded audio format.
         /// </summary>
         /// <param name="volumeCb">callback to apply audio volume, or NULL to apply volume in software</param>
         public void SetVolumeCallback(LibVLCVolumeCb volumeCb)
         {
-            _audioVolumeCb = volumeCb;
-            Native.LibVLCAudioSetVolumeCallback(NativeReference, (volumeCb == null) ? null : AudioVolumeCallbackHandle);
+            Native.LibVLCAudioSetVolumeCallback(NativeReference, volumeCb);
         }
 
-        LibVLCAudioSetupCb? _setupCb;
-        LibVLCAudioCleanupCb? _cleanupCb;
-
         /// <summary>
-        /// Sets decoded audio format via callbacks.
+        /// Sets decoded audio format via callbacks. 
         /// This only works in combination with libvlc_audio_set_callbacks().
         /// </summary>
         /// <param name="setupCb">callback to select the audio format (cannot be NULL)</param>
         /// <param name="cleanupCb">callback to release any allocated resources (or NULL)</param>
         public void SetAudioFormatCallback(LibVLCAudioSetupCb setupCb, LibVLCAudioCleanupCb cleanupCb)
         {
-            _setupCb = setupCb ?? throw new ArgumentNullException(nameof(setupCb));
-            _cleanupCb = cleanupCb;
-            Native.LibVLCAudioSetFormatCallbacks(NativeReference, AudioSetupCallbackHandle, (cleanupCb == null) ? null : AudioCleanupCallbackHandle);
+            Native.LibVLCAudioSetFormatCallbacks(NativeReference, setupCb, cleanupCb);
         }
 
         /// <summary>
-        /// Sets a fixed decoded audio format.
+        /// Sets a fixed decoded audio format. 
         /// This only works in combination with libvlc_audio_set_callbacks(), and is mutually exclusive with libvlc_audio_set_format_callbacks().
         /// </summary>
         /// <param name="format">a four-characters string identifying the sample format (e.g. "S16N" or "FL32")</param>
@@ -1071,7 +1045,7 @@ namespace LibVLCSharp.Shared
 
         /// <summary>
         /// Selects an audio output module.
-        /// Note:
+        /// Note: 
         /// Any change will take effect only after playback is stopped and restarted. Audio output cannot be changed while playing.
         /// </summary>
         /// <param name="name">name of audio output, use psz_name of</param>
@@ -1098,7 +1072,7 @@ namespace LibVLCSharp.Shared
         ///
         /// </summary>
         /// <returns>the current audio output device identifier, or NULL if no device is selected or in case of error.</returns>
-        public string? OutputDevice => Native.LibVLCAudioOutputDeviceGet(NativeReference).FromUtf8(libvlcFree: true);
+        public string OutputDevice => Native.LibVLCAudioOutputDeviceGet(NativeReference).FromUtf8(libvlcFree: true);
 
         /// <summary>
         /// Configures an explicit audio output device.
@@ -1112,18 +1086,18 @@ namespace LibVLCSharp.Shared
         /// parameter was NULL.
         /// If the module parameter is not NULL, the device parameter of the
         /// corresponding audio output, if it exists, will be set to the specified
-        /// string.
+        /// string. 
         /// A list of adequate potential device strings can be obtained with
         /// <see cref="LibVLC.AudioOutputDevices"/>
         /// </summary>
         /// <param name="deviceId">device identifier string</param>
         /// <param name="module">If NULL, current audio output module. if non-NULL, name of audio output module</param>
-        public void SetOutputDevice(string deviceId, string? module = null)
+        public void SetOutputDevice(string deviceId, string module = null)
         {
             var deviceIdUtf8 = deviceId.ToUtf8();
             var moduleUtf8 = module.ToUtf8();
-            MarshalUtils.PerformInteropAndFree(() =>
-                Native.LibVLCAudioOutputDeviceSet(NativeReference, moduleUtf8, deviceIdUtf8),
+            MarshalUtils.PerformInteropAndFree(() => 
+                Native.LibVLCAudioOutputDeviceSet(NativeReference, moduleUtf8, deviceIdUtf8), 
                 moduleUtf8, deviceIdUtf8);
         }
 
@@ -1141,15 +1115,15 @@ namespace LibVLCSharp.Shared
            Native.LibVLCAudioOutputDeviceListRelease);
 
         /// <summary>
-        /// Toggle mute status.
+        /// Toggle mute status. 
         /// Warning
-        /// Toggling mute atomically is not always possible: On some platforms, other processes can mute the VLC audio playback
+        /// Toggling mute atomically is not always possible: On some platforms, other processes can mute the VLC audio playback 
         /// stream asynchronously.
         /// Thus, there is a small race condition where toggling will not work.
-        /// See also the limitations of libvlc_audio_set_mute().
+        /// See also the limitations of libvlc_audio_set_mute(). 
         /// </summary>
         public void ToggleMute() => Native.LibVLCAudioToggleMute(NativeReference);
-
+        
         /// <summary>
         /// Get current mute status.
         /// Set mute status.
@@ -1159,7 +1133,7 @@ namespace LibVLCSharp.Shared
         /// If digital pass-through (S/PDIF, HDMI...) is in use, muting may be unapplicable.
         /// Also some audio output plugins do not support muting at all.
         /// Note
-        /// To force silent playback, disable all audio tracks. This is more efficient and reliable than mute.
+        /// To force silent playback, disable all audio tracks. This is more efficient and reliable than mute. 
         /// </summary>
         public bool Mute
         {
@@ -1199,7 +1173,7 @@ namespace LibVLCSharp.Shared
         /// Set current audio track.
         /// </summary>
         /// <param name="trackIndex">the track ID (i_id field from track description)</param>
-        /// <returns>true on success, false on error</returns>
+        /// <returns>0 on success, -1 on error</returns>
         public bool SetAudioTrack(int trackIndex) => Native.LibVLCAudioSetTrack(NativeReference, trackIndex) == 0;
 
         /// <summary>
@@ -1214,24 +1188,15 @@ namespace LibVLCSharp.Shared
         /// <returns></returns>
         public bool SetChannel(AudioOutputChannel channel) => Native.LibVLCAudioSetChannel(NativeReference, channel) == 0;
 
-        /// <summary>
-        /// Equals override based on the native instance reference
-        /// </summary>
-        /// <param name="obj">the mediaplayer instance to compare this to</param>
-        /// <returns></returns>
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
             return obj is MediaPlayer player &&
                    EqualityComparer<IntPtr>.Default.Equals(NativeReference, player.NativeReference);
         }
 
-        /// <summary>
-        /// Custom hascode implemenation for this MediaPlayer instance
-        /// </summary>
-        /// <returns>the hashcode for this MediaPlayer instance</returns>
         public override int GetHashCode()
         {
-            return NativeReference.GetHashCode();
+            return this.NativeReference.GetHashCode();
         }
 
         /// <summary>
@@ -1247,17 +1212,13 @@ namespace LibVLCSharp.Shared
         /// <returns>true on success, false on error </returns>
         public bool SetAudioDelay(long delay) => Native.LibVLCAudioSetDelay(NativeReference, delay) == 0;
 
-        LibVLCVideoLockCb? _videoLockCb;
-        LibVLCVideoUnlockCb? _videoUnlockCb;
-        LibVLCVideoDisplayCb? _videoDisplayCb;
-
         /// <summary>
         /// Set callbacks and private data to render decoded video to a custom area in memory.
         /// Use libvlc_video_set_format() or libvlc_video_set_format_callbacks() to configure the decoded format.
         /// Warning
         /// Rendering video into custom memory buffers is considerably less efficient than rendering in a custom window as normal.
-        /// For optimal perfomances, VLC media player renders into a custom window, and does not use this function and associated callbacks.
-        /// It is highly recommended that other LibVLC-based application do likewise.
+        /// For optimal perfomances, VLC media player renders into a custom window, and does not use this function and associated callbacks. 
+        /// It is highly recommended that other LibVLC-based application do likewise. 
         /// To embed video in a window, use libvlc_media_player_set_xid() or equivalent depending on the operating system.
         /// If window embedding does not fit the application use case, then a custom LibVLC video output display plugin is required to maintain optimal video rendering performances.
         /// The following limitations affect performance:
@@ -1270,17 +1231,10 @@ namespace LibVLCSharp.Shared
         /// <param name="lockCb">callback to lock video memory (must not be NULL)</param>
         /// <param name="unlockCb">callback to unlock video memory (or NULL if not needed)</param>
         /// <param name="displayCb">callback to display video (or NULL if not needed)</param>
-        public void SetVideoCallbacks(LibVLCVideoLockCb lockCb, LibVLCVideoUnlockCb? unlockCb,
-            LibVLCVideoDisplayCb? displayCb)
+        public void SetVideoCallbacks(LibVLCVideoLockCb lockCb, LibVLCVideoUnlockCb unlockCb,
+            LibVLCVideoDisplayCb displayCb)
         {
-            _videoLockCb = lockCb ?? throw new ArgumentNullException(nameof(lockCb));
-            _videoUnlockCb = unlockCb;
-            _videoDisplayCb = displayCb;
-            Native.LibVLCVideoSetCallbacks(NativeReference,
-                                           VideoLockCallbackHandle,
-                                           (unlockCb == null)? null : VideoUnlockCallbackHandle,
-                                           (displayCb == null)? null : VideoDisplayCallbackHandle,
-                                           GCHandle.ToIntPtr(_gcHandle));
+            Native.LibVLCVideoSetCallbacks(NativeReference, lockCb, unlockCb, displayCb, IntPtr.Zero);
         }
 
         /// <summary>
@@ -1296,39 +1250,32 @@ namespace LibVLCSharp.Shared
         {
             var chromaUtf8 = chroma.ToUtf8();
 
-            MarshalUtils.PerformInteropAndFree(() =>
+            MarshalUtils.PerformInteropAndFree(() => 
                 Native.LibVLCVideoSetFormat(NativeReference, chromaUtf8, width, height, pitch),
                 chromaUtf8);
         }
 
-        LibVLCVideoFormatCb? _videoFormatCb;
-        LibVLCVideoCleanupCb? _videoCleanupCb;
-        IntPtr _videoUserData = IntPtr.Zero;
-
         /// <summary>
-        /// Set decoded video chroma and dimensions.
+        /// Set decoded video chroma and dimensions. 
         /// This only works in combination with libvlc_video_set_callbacks().
         /// </summary>
         /// <param name="formatCb">callback to select the video format (cannot be NULL)</param>
         /// <param name="cleanupCb">callback to release any allocated resources (or NULL)</param>
-        public void SetVideoFormatCallbacks(LibVLCVideoFormatCb formatCb, LibVLCVideoCleanupCb? cleanupCb)
+        public void SetVideoFormatCallbacks(LibVLCVideoFormatCb formatCb, LibVLCVideoCleanupCb cleanupCb)
         {
-            _videoFormatCb = formatCb ?? throw new ArgumentNullException(nameof(formatCb));
-            _videoCleanupCb = cleanupCb;
-            Native.LibVLCVideoSetFormatCallbacks(NativeReference, VideoFormatCallbackHandle,
-                (cleanupCb == null)? null : _videoCleanupCb);
+            Native.LibVLCVideoSetFormatCallbacks(NativeReference, formatCb, cleanupCb);
         }
 
         /// <summary>
-        /// Enable or disable key press events handling, according to the LibVLC hotkeys configuration.
+        /// Enable or disable key press events handling, according to the LibVLC hotkeys configuration. 
         /// By default and for historical reasons, keyboard events are handled by the LibVLC video widget.
         /// Note
         /// On X11, there can be only one subscriber for key press and mouse click events per window.
-        /// If your application has subscribed to those events for the X window ID of the video widget,
+        /// If your application has subscribed to those events for the X window ID of the video widget, 
         /// then LibVLC will not be able to handle key presses and mouse clicks in any case.
         /// Warning
         /// This function is only implemented for X11 and Win32 at the moment.
-        /// true to handle key press events, false to ignore them.
+        /// true to handle key press events, false to ignore them. 
         /// </summary>
         public bool EnableKeyInput
         {
@@ -1336,11 +1283,11 @@ namespace LibVLCSharp.Shared
         }
 
         /// <summary>
-        /// Enable or disable mouse click events handling.
+        /// Enable or disable mouse click events handling. 
         /// By default, those events are handled. This is needed for DVD menus to work, as well as a few video filters such as "puzzle".
         /// Warning
         /// This function is only implemented for X11 and Win32 at the moment.
-        /// true to handle mouse click events, false to ignore them.
+        /// true to handle mouse click events, false to ignore them. 
         /// </summary>
         public bool EnableMouseInput
         {
@@ -1360,10 +1307,10 @@ namespace LibVLCSharp.Shared
         }
 
         /// <summary>
-        /// Get the mouse pointer coordinates over a video.
+        /// Get the mouse pointer coordinates over a video. 
         /// Coordinates are expressed in terms of the decoded video resolution, not in terms of pixels on the screen/viewport
         /// (to get the latter, you can query your windowing system directly).
-        /// Either of the coordinates may be negative or larger than the corresponding dimension of the video,
+        /// Either of the coordinates may be negative or larger than the corresponding dimension of the video, 
         /// if the cursor is outside the rendering area.
         /// Warning
         /// The coordinates may be out-of-date if the pointer is not located on the video rendering area.
@@ -1396,10 +1343,10 @@ namespace LibVLCSharp.Shared
 
         /// <summary>
         /// Get/set current video aspect ratio.
-        /// Set to null to reset to default
+        /// Set empty string to reset to default
         /// Invalid aspect ratios are ignored.
         /// </summary>
-        public string? AspectRatio
+        public string AspectRatio
         {
             get => Native.LibVLCVideoGetAspectRatio(NativeReference).FromUtf8(libvlcFree: true);
             set
@@ -1409,9 +1356,6 @@ namespace LibVLCSharp.Shared
             }
         }
 
-        /// <summary>
-        /// The current video subtitle track
-        /// </summary>
         public int Spu => Native.LibVLCVideoGetSpu(NativeReference);
 
         /// <summary>
@@ -1436,13 +1380,13 @@ namespace LibVLCSharp.Shared
             Native.LibVLCTrackDescriptionListRelease);
 
         /// <summary>
-        /// Get the current subtitle delay.
+        /// Get the current subtitle delay. 
         /// </summary>
         public long SpuDelay => Native.LibVLCVideoGetSpuDelay(NativeReference);
 
         /// <summary>
-        /// Set the subtitle delay.
-        /// This affects the timing of when the subtitle will be displayed.
+        /// Set the subtitle delay. 
+        /// This affects the timing of when the subtitle will be displayed. 
         /// Positive values result in subtitles being displayed later, while negative values will result in subtitles being displayed earlier.
         /// The subtitle delay will be reset to zero each time the media changes.
         /// </summary>
@@ -1460,22 +1404,6 @@ namespace LibVLCSharp.Shared
             Native.LibVLCTrackDescriptionListRelease);
 
         /// <summary>
-        /// Get the full description of available chapters.
-        /// </summary>
-        /// <param name="titleIndex">Index of the title to query for chapters (uses current title if set to -1)</param>
-        /// <returns>Array of chapter descriptions.</returns>
-        public ChapterDescription[] FullChapterDescriptions(int titleIndex = -1) => MarshalUtils.Retrieve(NativeReference,
-            (IntPtr nativeRef, out IntPtr array) =>
-            {
-                var count = Native.LibVLCMediaPlayerGetFullChapterDescriptions(nativeRef, titleIndex, out array);
-                // the number of chapters (-1 on error)
-                return count < 0 ? 0 : (uint)count;
-            },
-            MarshalUtils.PtrToStructure<ChapterDescriptionStructure>,
-            t => t.Build(),
-            Native.LibVLCChapterDescriptionsRelease);
-
-        /// <summary>
         /// Get the description of available chapters for specific title.
         /// </summary>
         /// <param name="titleIndex">selected title</param>
@@ -1490,7 +1418,7 @@ namespace LibVLCSharp.Shared
         /// Get/Set current crop filter geometry.
         /// Empty string to unset
         /// </summary>
-        public string? CropGeometry
+        public string CropGeometry
         {
             get => Native.LibVLCVideoGetCropGeometry(NativeReference).FromUtf8(libvlcFree: true);
             set
@@ -1546,7 +1474,7 @@ namespace LibVLCSharp.Shared
         /// <param name="width">the snapshot's width</param>
         /// <param name="height">the snapshot's height</param>
         /// <returns>true on success</returns>
-        public bool TakeSnapshot(uint num, string? filePath, uint width, uint height)
+        public bool TakeSnapshot(uint num, string filePath, uint width, uint height)
         {
             var filePathUtf8 = filePath.ToUtf8();
             return MarshalUtils.PerformInteropAndFree(() =>
@@ -1557,12 +1485,12 @@ namespace LibVLCSharp.Shared
         /// <summary>
         /// Enable or disable deinterlace filter
         /// </summary>
-        /// <param name="deinterlaceMode">type of deinterlace filter, null to disable</param>
-        public void SetDeinterlace(string? deinterlaceMode)
+        /// <param name="deinterlaceMode">type of deinterlace filter, empty string to disable</param>
+        public void SetDeinterlace(string deinterlaceMode)
         {
             var deinterlaceModeUtf8 = deinterlaceMode.ToUtf8();
 
-            MarshalUtils.PerformInteropAndFree(() =>
+            MarshalUtils.PerformInteropAndFree(() => 
                 Native.LibVLCVideoSetDeinterlace(NativeReference, deinterlaceModeUtf8),
                 deinterlaceModeUtf8);
         }
@@ -1579,7 +1507,7 @@ namespace LibVLCSharp.Shared
         /// </summary>
         /// <param name="option">marq option to get</param>
         /// <returns></returns>
-        public string? MarqueeString(VideoMarqueeOption option)
+        public string MarqueeString(VideoMarqueeOption option)
         {
             var marqueeStrPtr = Native.LibVLCVideoGetMarqueeString(NativeReference, option);
             return marqueeStrPtr.FromUtf8(libvlcFree: true);
@@ -1600,14 +1528,14 @@ namespace LibVLCSharp.Shared
         /// </summary>
         /// <param name="option">marq option to set</param>
         /// <param name="marqueeValue">marq option value</param>
-        public void SetMarqueeString(VideoMarqueeOption option, string? marqueeValue)
+        public void SetMarqueeString(VideoMarqueeOption option, string marqueeValue)
         {
             var marqueeValueUtf8 = marqueeValue.ToUtf8();
             MarshalUtils.PerformInteropAndFree(() =>
                 Native.LibVLCVideoSetMarqueeString(NativeReference, option, marqueeValueUtf8),
                 marqueeValueUtf8);
         }
-
+        
 
         /// <summary>
         /// Get integer logo option.
@@ -1630,7 +1558,7 @@ namespace LibVLCSharp.Shared
         /// </summary>
         /// <param name="option">logo option to set, values of libvlc_video_logo_option_t</param>
         /// <param name="logoValue">logo option value</param>
-        public void SetLogoString(VideoLogoOption option, string? logoValue)
+        public void SetLogoString(VideoLogoOption option, string logoValue)
         {
             var logoValueUtf8 = logoValue.ToUtf8();
 
@@ -1655,11 +1583,6 @@ namespace LibVLCSharp.Shared
         /// <param name="value">adjust option value</param>
         public void SetAdjustInt(VideoAdjustOption option, int value) => Native.LibVLCVideoSetAdjustInt(NativeReference, option, value);
 
-        /// <summary>
-        /// Get adjust option float value
-        /// </summary>
-        /// <param name="option">The option for which to get the value</param>
-        /// <returns>the float value for a given option</returns>
         public float AdjustFloat(VideoAdjustOption option) => Native.LibVLCVideoGetAdjustFloat(NativeReference, option);
 
         /// <summary>
@@ -1702,7 +1625,7 @@ namespace LibVLCSharp.Shared
 
         /// <summary>
         /// Update the video viewpoint information.
-        /// The values are set asynchronously, it will be used by the next frame displayed.
+        /// The values are set asynchronously, it will be used by the next frame displayed. 
         /// It is safe to call this function before the media player is started.
         /// LibVLC 3.0.0 and later
         /// </summary>
@@ -1719,7 +1642,7 @@ namespace LibVLCSharp.Shared
 
             Viewpoint = new VideoViewpoint(yaw, pitch, roll, fov);
             Marshal.StructureToPtr(Viewpoint, vpPtr, false);
-
+            
             var result = Native.LibVLCVideoUpdateViewpoint(NativeReference, vpPtr, absolute) == 0;
             MarshalUtils.LibVLCFree(ref vpPtr);
 
@@ -1731,14 +1654,14 @@ namespace LibVLCSharp.Shared
         /// </summary>
         /// <param name="rendererItem">discovered renderer item or null to fallback on local rendering</param>
         /// <returns>true on success, false otherwise</returns>
-        public bool SetRenderer(RendererItem? rendererItem) =>
+        public bool SetRenderer(RendererItem rendererItem) =>
             Native.LibVLCMediaPlayerSetRenderer(NativeReference, rendererItem?.NativeReference ?? IntPtr.Zero) == 0;
 
         /// <summary>Gets the media role.
         /// <para/> version LibVLC 3.0.0 and later.
         /// </summary>
         public MediaPlayerRole Role => Native.LibVLCMediaPlayerGetRole(NativeReference);
-
+        
         /// <summary>Sets the media role.
         /// <para/> version LibVLC 3.0.0 and later.
         /// </summary>
@@ -1760,7 +1683,7 @@ namespace LibVLCSharp.Shared
         /// <summary>
         /// Caching value for local files, in milliseconds [0 .. 60000ms]
         /// </summary>
-        public uint FileCaching
+        public int FileCaching
         {
             get => Configuration.FileCaching;
             set => Configuration.FileCaching = value;
@@ -1769,7 +1692,7 @@ namespace LibVLCSharp.Shared
         /// <summary>
         /// Caching value for network resources, in milliseconds [0 .. 60000ms]
         /// </summary>
-        public uint NetworkCaching
+        public int NetworkCaching
         {
             get => Configuration.NetworkCaching;
             set => Configuration.NetworkCaching = value;
@@ -1777,146 +1700,21 @@ namespace LibVLCSharp.Shared
 
         MediaConfiguration Configuration = new MediaConfiguration();
 
+#if UNITY_ANDROID
+        /// <summary>
+        /// Retrieve a video frame from the Unity plugin.
+        /// </summary>
+        /// <param name="updated">True if the video frame has been updated</param>
+        /// <returns>A decoded texture</returns>
+        public IntPtr GetFrame(out bool updated)
+        {
+            var frame = Native.GetFrame(NativeReference, out bool isUpdated);
+            updated = isUpdated;
+            return frame;
+        }
+#endif
+
         #region Callbacks
-
-        static readonly LibVLCVideoLockCb VideoLockCallbackHandle = VideoLockCallback;
-        static readonly LibVLCVideoUnlockCb VideoUnlockCallbackHandle = VideoUnlockCallback;
-        static readonly LibVLCVideoDisplayCb VideoDisplayCallbackHandle = VideoDisplayCallback;
-        static readonly LibVLCVideoFormatCb VideoFormatCallbackHandle = VideoFormatCallback;
-
-        [MonoPInvokeCallback(typeof(LibVLCVideoLockCb))]
-        private static IntPtr VideoLockCallback(IntPtr opaque, IntPtr planes)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(opaque);
-            if (mediaPlayer?._videoLockCb != null)
-            {
-                return mediaPlayer._videoLockCb(mediaPlayer._videoUserData, planes);
-            }
-            return IntPtr.Zero;
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCVideoUnlockCb))]
-        private static void VideoUnlockCallback(IntPtr opaque, IntPtr picture, IntPtr planes)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(opaque);
-            if (mediaPlayer?._videoUnlockCb != null)
-            {
-                mediaPlayer._videoUnlockCb(mediaPlayer._videoUserData, picture, planes);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCVideoDisplayCb))]
-        private static void VideoDisplayCallback(IntPtr opaque, IntPtr picture)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(opaque);
-            if (mediaPlayer?._videoDisplayCb != null)
-            {
-                mediaPlayer._videoDisplayCb(mediaPlayer._videoUserData, picture);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCVideoFormatCb))]
-        private static uint VideoFormatCallback(ref IntPtr opaque, IntPtr chroma, ref uint width, ref uint height, ref uint pitches, ref uint lines)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(opaque);
-            if (mediaPlayer?._videoFormatCb != null)
-            {
-                return mediaPlayer._videoFormatCb(ref mediaPlayer._videoUserData, chroma, ref width, ref height, ref pitches, ref lines);
-            }
-
-            return 0;
-        }
-
-        static readonly LibVLCAudioPlayCb AudioPlayCallbackHandle = AudioPlayCallback;
-        static readonly LibVLCAudioPauseCb AudioPauseCallbackHandle = AudioPauseCallback;
-        static readonly LibVLCAudioResumeCb AudioResumeCallbackHandle = AudioResumeCallback;
-        static readonly LibVLCAudioFlushCb AudioFlushCallbackHandle = AudioFlushCallback;
-        static readonly LibVLCAudioDrainCb AudioDrainCallbackHandle = AudioDrainCallback;
-        static readonly LibVLCVolumeCb AudioVolumeCallbackHandle = AudioVolumeCallback;
-        static readonly LibVLCAudioSetupCb AudioSetupCallbackHandle = AudioSetupCallback;
-        static readonly LibVLCAudioCleanupCb AudioCleanupCallbackHandle = AudioCleanupCallback;
-
-        [MonoPInvokeCallback(typeof(LibVLCAudioPlayCb))]
-        private static void AudioPlayCallback(IntPtr data, IntPtr samples, uint count, long pts)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(data);
-            if (mediaPlayer?._audioPlayCb != null)
-            {
-                mediaPlayer._audioPlayCb(mediaPlayer._audioUserData, samples, count, pts);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCAudioPauseCb))]
-        private static void AudioPauseCallback(IntPtr data, long pts)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(data);
-            if (mediaPlayer?._audioPauseCb != null)
-            {
-                mediaPlayer._audioPauseCb(mediaPlayer._audioUserData, pts);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCAudioResumeCb))]
-        private static void AudioResumeCallback(IntPtr data, long pts)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(data);
-            if (mediaPlayer?._audioResumeCb != null)
-            {
-                mediaPlayer._audioResumeCb(mediaPlayer._audioUserData, pts);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCAudioFlushCb))]
-        private static void AudioFlushCallback(IntPtr data, long pts)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(data);
-            if (mediaPlayer?._audioFlushCb != null)
-            {
-                mediaPlayer._audioFlushCb(mediaPlayer._audioUserData, pts);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCAudioDrainCb))]
-        private static void AudioDrainCallback(IntPtr data)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(data);
-            if (mediaPlayer?._audioDrainCb != null)
-            {
-                mediaPlayer._audioDrainCb(mediaPlayer._audioUserData);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCVolumeCb))]
-        private static void AudioVolumeCallback(IntPtr data, float volume, bool mute)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(data);
-            if (mediaPlayer?._audioVolumeCb != null)
-            {
-                mediaPlayer._audioVolumeCb(mediaPlayer._audioUserData, volume, mute);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCAudioSetupCb))]
-        private static int AudioSetupCallback(ref IntPtr opaque, ref IntPtr format, ref uint rate, ref uint channels)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(opaque);
-            if (mediaPlayer?._setupCb != null)
-            {
-                return mediaPlayer._setupCb(ref mediaPlayer._audioUserData, ref format, ref rate, ref channels);
-            }
-
-            return -1;
-        }
-
-        [MonoPInvokeCallback(typeof(LibVLCAudioCleanupCb))]
-        private static void AudioCleanupCallback(IntPtr opaque)
-        {
-            var mediaPlayer = MarshalUtils.GetInstance<MediaPlayer>(opaque);
-            if (mediaPlayer?._cleanupCb != null)
-            {
-                mediaPlayer._cleanupCb(mediaPlayer._audioUserData);
-            }
-        }
 
         /// <summary>
         /// <para>A LibVLC media player plays one media (usually in a custom drawable).</para>
@@ -2002,7 +1800,7 @@ namespace LibVLCSharp.Shared
         /// <para>in the video decoders, video filters and/or video converters.</para>
         /// </remarks>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate uint LibVLCVideoFormatCb(ref IntPtr opaque, IntPtr chroma, ref uint width,
+        public delegate uint LibVLCVideoFormatCb(ref IntPtr userData, IntPtr chroma, ref uint width,
             ref uint height, ref uint pitches, ref uint lines);
 
         /// <summary>Callback prototype to configure picture buffers format.</summary>
@@ -2024,13 +1822,13 @@ namespace LibVLCSharp.Shared
         /// <returns>0 on success, anything else to skip audio playback</returns>
         /// <remarks>This is called when the media player needs to create a new audio output.</remarks>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate int LibVLCAudioSetupCb(ref IntPtr opaque, ref IntPtr format, ref uint rate, ref uint channels);
+        public delegate int LibVLCAudioSetupCb(ref IntPtr data, ref IntPtr format, ref uint rate, ref uint channels);
 
         /// <summary>Callback prototype for audio playback cleanup.</summary>
         /// <param name="opaque">data pointer as passed to libvlc_audio_set_callbacks() [IN]</param>
         /// <remarks>This is called when the media player no longer needs an audio output.</remarks>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void LibVLCAudioCleanupCb(IntPtr opaque);
+        public delegate void LibVLCAudioCleanupCb(IntPtr data);
 
         /// <summary>Callback prototype for audio playback.</summary>
         /// <param name="data">data pointer as passed to libvlc_audio_set_callbacks() [IN]</param>
@@ -2074,12 +1872,13 @@ namespace LibVLCSharp.Shared
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void LibVLCAudioResumeCb(IntPtr data, long pts);
 
-        /// <summary>Callback prototype for audio buffer flush.
-        /// <para>LibVLC invokes this callback if it needs to discard all pending buffers and</para>
-        /// <para>stop playback as soon as possible. This typically occurs when the media is stopped.</para>
-        /// </summary>
+        /// <summary>Callback prototype for audio buffer flush.</summary>
         /// <param name="data">data pointer as passed to libvlc_audio_set_callbacks() [IN]</param>
-        /// <param name="pts">current presentation timestamp</param>
+        /// <remarks>
+        /// <para>LibVLC invokes this callback if it needs to discard all pending buffers and</para>
+        /// <para>stop playback as soon as possible. This typically occurs when the media is</para>
+        /// <para>stopped.</para>
+        /// </remarks>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void LibVLCAudioFlushCb(IntPtr data, long pts);
 
@@ -2101,7 +1900,7 @@ namespace LibVLCSharp.Shared
         public delegate void LibVLCVolumeCb(IntPtr data, float volume, [MarshalAs(UnmanagedType.I1)] bool mute);
 
 #endregion
-
+        
         /// <summary>
         /// Get the Event Manager from which the media player send event.
         /// </summary>
@@ -2121,270 +1920,180 @@ namespace LibVLCSharp.Shared
 
         #region events
 
-        /// <summary>
-        /// The media of this mediaplayer changed
-        /// </summary>
         public event EventHandler<MediaPlayerMediaChangedEventArgs> MediaChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerMediaChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerMediaChanged, value);
         }
 
-        /// <summary>
-        /// Nothing special to report
-        /// </summary>
         public event EventHandler<EventArgs> NothingSpecial
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerNothingSpecial, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerNothingSpecial, value);
         }
 
-        /// <summary>
-        /// The mediaplayer is opening a media
-        /// </summary>
         public event EventHandler<EventArgs> Opening
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerOpening, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerOpening, value);
         }
 
-        /// <summary>
-        /// The mediaplayer is buffering
-        /// </summary>
         public event EventHandler<MediaPlayerBufferingEventArgs> Buffering
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerBuffering, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerBuffering, value);
         }
 
-        /// <summary>
-        /// The mediaplayer started playing a media
-        /// </summary>
         public event EventHandler<EventArgs> Playing
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerPlaying, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerPlaying, value);
         }
 
-        /// <summary>
-        /// The mediaplayer paused playback
-        /// </summary>
         public event EventHandler<EventArgs> Paused
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerPaused, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerPaused, value);
         }
 
-        /// <summary>
-        /// The mediaplayer stopped playback
-        /// </summary>
         public event EventHandler<EventArgs> Stopped
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerStopped, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerStopped, value);
         }
 
-        /// <summary>
-        /// The mediaplayer went forward in the playback
-        /// </summary>
         public event EventHandler<EventArgs> Forward
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerForward, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerForward, value);
         }
 
-        /// <summary>
-        /// The mediaplayer went backward in the playback
-        /// </summary>
         public event EventHandler<EventArgs> Backward
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerBackward, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerBackward, value);
         }
 
-        /// <summary>
-        /// The mediaplayer reached the end of the playback
-        /// </summary>
         public event EventHandler<EventArgs> EndReached
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerEndReached, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerEndReached, value);
         }
 
-        /// <summary>
-        /// The mediaplayer encountered an error during playback
-        /// </summary>
         public event EventHandler<EventArgs> EncounteredError
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerEncounteredError, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerEncounteredError, value);
         }
 
-        /// <summary>
-        /// The mediaplayer's playback time changed
-        /// </summary>
         public event EventHandler<MediaPlayerTimeChangedEventArgs> TimeChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerTimeChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerTimeChanged, value);
         }
 
-        /// <summary>
-        /// The mediaplayer's position changed
-        /// </summary>
         public event EventHandler<MediaPlayerPositionChangedEventArgs> PositionChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerPositionChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerPositionChanged, value);
         }
 
-        /// <summary>
-        /// The mediaplayer's seek capability changed
-        /// </summary>
         public event EventHandler<MediaPlayerSeekableChangedEventArgs> SeekableChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerSeekableChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerSeekableChanged, value);
         }
 
-        /// <summary>
-        /// The mediaplayer's pause capability changed
-        /// </summary>
         public event EventHandler<MediaPlayerPausableChangedEventArgs> PausableChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerPausableChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerPausableChanged, value);
         }
 
-        /// <summary>
-        /// The title of the mediaplayer changed
-        /// </summary>
         public event EventHandler<MediaPlayerTitleChangedEventArgs> TitleChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerTitleChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerTitleChanged, value);
         }
 
-        /// <summary>
-        /// The mediaplayer changed the chapter of a media
-        /// </summary>
         public event EventHandler<MediaPlayerChapterChangedEventArgs> ChapterChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerChapterChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerChapterChanged, value);
         }
 
-        /// <summary>
-        /// The mediaplayer took a snapshot
-        /// </summary>
         public event EventHandler<MediaPlayerSnapshotTakenEventArgs> SnapshotTaken
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerSnapshotTaken, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerSnapshotTaken, value);
         }
 
-        /// <summary>
-        /// The length of a playback changed
-        /// </summary>
         public event EventHandler<MediaPlayerLengthChangedEventArgs> LengthChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerLengthChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerLengthChanged, value);
         }
 
-        /// <summary>
-        /// The Video Output count of the MediaPlayer changed
-        /// </summary>
         public event EventHandler<MediaPlayerVoutEventArgs> Vout
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerVout, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerVout, value);
         }
-
-        /// <summary>
-        /// The mediaplayer scrambled status changed
-        /// </summary>
+        
         public event EventHandler<MediaPlayerScrambledChangedEventArgs> ScrambledChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerScrambledChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerScrambledChanged, value);
         }
 
-        /// <summary>
-        /// The mediaplayer has a new Elementary Stream (ES)
-        /// </summary>
         public event EventHandler<MediaPlayerESAddedEventArgs> ESAdded
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerESAdded, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerESAdded, value);
         }
 
-        /// <summary>
-        /// The mediaplayer has one less Elementary Stream (ES)
-        /// </summary>
         public event EventHandler<MediaPlayerESDeletedEventArgs> ESDeleted
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerESDeleted, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerESDeleted, value);
         }
 
-        /// <summary>
-        /// An Elementary Stream (ES) was selected
-        /// </summary>
         public event EventHandler<MediaPlayerESSelectedEventArgs> ESSelected
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerESSelected, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerESSelected, value);
         }
 
-        /// <summary>
-        /// The mediaplayer's audio device changed
-        /// </summary>
         public event EventHandler<MediaPlayerAudioDeviceEventArgs> AudioDevice
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerAudioDevice, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerAudioDevice, value);
         }
 
-        /// <summary>
-        /// The mediaplayer is corked
-        /// </summary>
         public event EventHandler<EventArgs> Corked
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerCorked, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerCorked, value);
         }
 
-        /// <summary>
-        /// The mediaplayer is uncorked
-        /// </summary>
         public event EventHandler<EventArgs> Uncorked
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerUncorked, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerUncorked, value);
         }
 
-        /// <summary>
-        /// The mediaplayer is muted
-        /// </summary>
         public event EventHandler<EventArgs> Muted
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerMuted, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerMuted, value);
         }
 
-        /// <summary>
-        /// The mediaplayer is unmuted
-        /// </summary>
         public event EventHandler<EventArgs> Unmuted
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerUnmuted, value);
             remove => EventManager.DetachEvent(EventType.MediaPlayerUnmuted, value);
         }
 
-        /// <summary>
-        /// The mediaplayer's volume changed
-        /// </summary>
         public event EventHandler<MediaPlayerVolumeChangedEventArgs> VolumeChanged
         {
             add => EventManager.AttachEvent(EventType.MediaPlayerAudioVolume, value);
@@ -2393,19 +2102,24 @@ namespace LibVLCSharp.Shared
 
 #endregion
 
-        /// <summary>
-        /// Dispose override
-        /// Effectively stops playback and disposes a media if any
-        /// </summary>
-        /// <param name="disposing">release any unmanaged resources</param>
         protected override void Dispose(bool disposing)
         {
+            if (IsDisposed || NativeReference == IntPtr.Zero)
+                return;
+
             if(disposing)
             {
-                if (_gcHandle.IsAllocated)
-                    _gcHandle.Free();
-            }
+                if(IsPlaying)
+                {
+                    Stop();
+                }
 
+                if(Media != null)
+                {
+                    Media.Dispose();
+                }
+            }
+            
             base.Dispose(disposing);
         }
     }
@@ -2413,156 +2127,56 @@ namespace LibVLCSharp.Shared
     /// <summary>Description for titles</summary>
     public enum Title
     {
-        /// <summary>
-        /// Menu title
-        /// </summary>
         Menu = 1,
-
-        /// <summary>
-        /// Interactive title
-        /// </summary>
         Interactive = 2
     }
 
     /// <summary>Marq options definition</summary>
     public enum VideoMarqueeOption
     {
-        /// <summary>
-        /// Enable marquee
-        /// </summary>
         Enable = 0,
-
-        /// <summary>
-        /// Text marquee
-        /// </summary>
         Text = 1,
-
-        /// <summary>
-        /// Color marquee
-        /// </summary>
+        /// <summary>string argument</summary>
         Color = 2,
-
-        /// <summary>
-        /// Opacity marquee
-        /// </summary>
+        /// <summary>string argument</summary>
         Opacity = 3,
-
-        /// <summary>
-        /// Position marquee
-        /// </summary>
+        /// <summary>string argument</summary>
         Position = 4,
-
-        /// <summary>
-        /// Refresh marquee
-        /// </summary>
+        /// <summary>string argument</summary>
         Refresh = 5,
-
-        /// <summary>
-        /// Size marquee
-        /// </summary>
+        /// <summary>string argument</summary>
         Size = 6,
-
-        /// <summary>
-        /// Timeout marquee
-        /// </summary>
+        /// <summary>string argument</summary>
         Timeout = 7,
-
-        /// <summary>
-        /// X marquee
-        /// </summary>
+        /// <summary>string argument</summary>
         X = 8,
-
-        /// <summary>
-        /// Y marquee
-        /// </summary>
+        /// <summary>string argument</summary>
         Y = 9
     }
 
     /// <summary>Navigation mode</summary>
     public enum NavigationMode
     {
-        /// <summary>
-        /// Activate
-        /// </summary>
         Activate = 0,
-
-        /// <summary>
-        /// Navigation up
-        /// </summary>
         Up = 1,
-
-        /// <summary>
-        /// Navigation down
-        /// </summary>
         Down = 2,
-
-        /// <summary>
-        /// Navigation left
-        /// </summary>
         Left = 3,
-
-        /// <summary>
-        /// Navigation right
-        /// </summary>
         Right = 4,
-
-        /// <summary>
-        /// Navigation popup
-        /// </summary>
         Popup = 5
     }
 
     /// <summary>Enumeration of values used to set position (e.g. of video title).</summary>
     public enum Position
     {
-        /// <summary>
-        /// Disable
-        /// </summary>
         Disable = -1,
-
-        /// <summary>
-        /// Center video title
-        /// </summary>
         Center = 0,
-
-        /// <summary>
-        /// Left video title
-        /// </summary>
         Left = 1,
-
-        /// <summary>
-        /// Right video title
-        /// </summary>
         Right = 2,
-
-        /// <summary>
-        /// Top video title
-        /// </summary>
         Top = 3,
-
-        /// <summary>
-        /// TopLeft video title
-        /// </summary>
         TopLeft = 4,
-
-        /// <summary>
-        /// TopRight video title
-        /// </summary>
         TopRight = 5,
-
-        /// <summary>
-        /// Bottom video title
-        /// </summary>
         Bottom = 6,
-
-        /// <summary>
-        /// BottomLeft video title
-        /// </summary>
         BottomLeft = 7,
-
-        /// <summary>
-        /// BottomRight video title
-        /// </summary>
         BottomRight = 8
     }
 
@@ -2572,147 +2186,60 @@ namespace LibVLCSharp.Shared
     /// </summary>
     public enum TeletextKey
     {
-        /// <summary>
-        /// Red
-        /// </summary>
         Red = 7471104,
-
-        /// <summary>
-        /// Green
-        /// </summary>
         Green = 6750208,
-
-        /// <summary>
-        /// Yellow
-        /// </summary>
         Yellow = 7929856,
-
-        /// <summary>
-        /// Blue
-        /// </summary>
         Blue = 6422528,
-
-        /// <summary>
-        /// Index
-        /// </summary>
         Index = 6881280
     }
 
-    /// <summary>
-    /// option values for libvlc_video_{get,set}_logo_{int,string}
-    /// </summary>
+    /// <summary>option values for libvlc_video_{get,set}_logo_{int,string}</summary>
     public enum VideoLogoOption
     {
-        /// <summary>
-        /// Enable
-        /// </summary>
         Enable = 0,
-
-        /// <summary>
-        /// string argument, &quot;file,d,t;file,d,t;...&quot;
-        /// </summary>
+        /// <summary>string argument, &quot;file,d,t;file,d,t;...&quot;</summary>
         File = 1,
-
-        /// <summary>
-        /// X
-        /// </summary>
         X = 2,
-
-        /// <summary>
-        /// Y
-        /// </summary>
         Y = 3,
-
-        /// <summary>
-        /// Delay
-        /// </summary>
         Delay = 4,
-
-        /// <summary>
-        /// Repeat
-        /// </summary>
         Repeat = 5,
-
-        /// <summary>
-        /// Opacity
-        /// </summary>
         Opacity = 6,
-
-        /// <summary>
-        /// Position
-        /// </summary>
         Position = 7
     }
 
-    /// <summary>
-    /// option values for libvlc_video_{get,set}_adjust_{int,float,bool}
-    /// </summary>
+    /// <summary>option values for libvlc_video_{get,set}_adjust_{int,float,bool}</summary>
     public enum VideoAdjustOption
     {
-        /// <summary>
-        /// Enable
-        /// </summary>
         Enable = 0,
-
-        /// <summary>
-        /// Contrast
-        /// </summary>
         Contrast = 1,
-
-        /// <summary>
-        /// Brightness
-        /// </summary>
         Brightness = 2,
-
-        /// <summary>
-        /// Hue
-        /// </summary>
         Hue = 3,
-
-        /// <summary>
-        /// Saturation
-        /// </summary>
         Saturation = 4,
-
-        /// <summary>
-        /// Gamma
-        /// </summary>
         Gamma = 5
     }
 
-    /// <summary>
-    /// Audio channels
-    /// </summary>
+    /// <summary>Audio device types</summary>
+    public enum AudioOutputDeviceType
+    {
+        DeviceError = -1,
+        DeviceMono = 1,
+        DeviceStereo = 2,
+        Device2F2R = 4,
+        Device3F2R = 5,
+        Device5_1 = 6,
+        Device6_1 = 7,
+        Device7_1 = 8,
+        DeviceSPDIF = 10
+    }
+
+    /// <summary>Audio channels</summary>
     public enum AudioOutputChannel
     {
-        /// <summary>
-        /// Error
-        /// </summary>
         Error = -1,
-
-        /// <summary>
-        /// Stereo mode
-        /// </summary>
         Stereo = 1,
-
-        /// <summary>
-        /// RStereo mode
-        /// </summary>
         RStereo = 2,
-
-        /// <summary>
-        /// Left mode
-        /// </summary>
         Left = 3,
-
-        /// <summary>
-        /// Right mode
-        /// </summary>
         Right = 4,
-
-        /// <summary>
-        /// Dolbys mode
-        /// </summary>
         Dolbys = 5
     }
 
@@ -2737,11 +2264,11 @@ namespace LibVLCSharp.Shared
         LiblvcRoleNotification = 5,
         /// <summary>Embedded animation (e.g. in web page)</summary>
         Animation = 6,
-        /// <summary>Audio editing/production</summary>
+        /// <summary>Audio editting/production</summary>
         Production = 7,
         /// <summary>Accessibility</summary>
         Accessibility = 8,
         /// <summary>Testing</summary>
         Test = 9
-    }
+    }    
 }

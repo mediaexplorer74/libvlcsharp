@@ -28,7 +28,7 @@ namespace LibVLCSharp.Shared
                 EntryPoint = "libvlc_dialog_dismiss")]
             internal static extern int LibVLCDialogDismiss(IntPtr dialogId);
         }
-
+        
         Dialog(IntPtr id)
         {
             if(id == IntPtr.Zero)
@@ -48,26 +48,28 @@ namespace LibVLCSharp.Shared
         /// <param name="password">valid string</param>
         /// <param name="store">if true stores the credentials</param>
         /// <returns></returns>
-        public bool PostLogin(string? username, string? password, bool store)
+        public bool PostLogin(string username, string password, bool store)
         {
             if (_id == IntPtr.Zero)
                 throw new VLCException("Calling method on dismissed Dialog instance");
 
-            username ??= string.Empty;
-            password ??= string.Empty;
+            if (username == null)
+                username = string.Empty;
+            if (password == null)
+                password = string.Empty;
 
             var usernamePtr = username.ToUtf8();
             var passwordPtr = password.ToUtf8();
 
             var result = MarshalUtils.PerformInteropAndFree(
-                () => Native.LibVLCDialogPostLogin(_id, usernamePtr, passwordPtr, store),
+                () => Native.LibVLCDialogPostLogin(_id, usernamePtr, passwordPtr, store), 
                 usernamePtr, passwordPtr) == 0;
 
             _id = IntPtr.Zero;
 
             return result;
         }
-
+        
         /// <summary>
         /// Post a question answer.
         /// After this call, this instance won't be valid anymore
@@ -116,31 +118,20 @@ namespace LibVLCSharp.Shared
     /// </summary>
     public enum DialogQuestionType
     {
-        /// <summary>
-        /// Normal question
-        /// </summary>
         Normal = 0,
-
-        /// <summary>
-        /// Warning question
-        /// </summary>
         Warning = 1,
-
-        /// <summary>
-        /// Critical question
-        /// </summary>
         Critical = 2
     }
 
     /// <summary>
-    /// Called when an error message needs to be displayed.
+    /// Called when an error message needs to be displayed. 
     /// </summary>
     /// <param name="title">title of the dialog </param>
     /// <param name="text">text of the dialog </param>
-    public delegate Task DisplayError(string? title, string? text);
+    public delegate Task DisplayError(string title, string text);
 
     /// <summary>
-    /// Called when a login dialog needs to be displayed.
+    /// Called when a login dialog needs to be displayed. 
     /// You can interact with this dialog by calling PostLogin() to post an answer or Dismiss() to cancel this dialog.
     /// </summary>
     /// <param name="dialog">id used to interact with the dialog </param>
@@ -149,10 +140,10 @@ namespace LibVLCSharp.Shared
     /// <param name="defaultUsername">user name that should be set on the user form</param>
     /// <param name="askStore">if true, ask the user if he wants to save the credentials</param>
     /// <param name="token">Use token to cancel operation</param>
-    public delegate Task DisplayLogin(Dialog dialog, string? title, string? text, string? defaultUsername, bool askStore, CancellationToken token);
+    public delegate Task DisplayLogin(Dialog dialog, string title, string text, string defaultUsername, bool askStore, CancellationToken token);
 
     /// <summary>
-    /// Called when a question dialog needs to be displayed.
+    /// Called when a question dialog needs to be displayed. 
     /// You can interact with this dialog by calling PostAction() to post an answer or Dismiss() to cancel this dialog.
     /// </summary>
     /// <param name="dialog">id used to interact with the dialog</param>
@@ -163,11 +154,11 @@ namespace LibVLCSharp.Shared
     /// <param name="firstActionText">text of the first button, if NULL, don't display this button</param>
     /// <param name="secondActionText">text of the second button, if NULL, don't display this button</param>
     /// <param name="token">Use token to cancel operation</param>
-    public delegate Task DisplayQuestion(Dialog dialog, string? title, string? text, DialogQuestionType type, string? cancelText,
-        string? firstActionText, string? secondActionText, CancellationToken token);
+    public delegate Task DisplayQuestion(Dialog dialog, string title, string text, DialogQuestionType type, string cancelText,
+        string firstActionText, string secondActionText, CancellationToken token);
 
     /// <summary>
-    /// Called when a progress dialog needs to be displayed.
+    /// Called when a progress dialog needs to be displayed. 
     /// If cancellable cancelText is not NULL, you can cancel this dialog by calling libvlc_dialog_dismiss()
     /// </summary>
     /// <param name="dialog">id used to interact with the dialog</param>
@@ -177,13 +168,61 @@ namespace LibVLCSharp.Shared
     /// <param name="position">initial position of the progress bar (between 0.0 and 1.0)</param>
     /// <param name="cancelText">text of the cancel button, if NULL the dialog is not cancellable</param>
     /// <param name="token">Use token to cancel operation</param>
-    public delegate Task DisplayProgress(Dialog dialog, string? title, string? text, bool indeterminate, float position, string? cancelText, CancellationToken token);
+    public delegate Task DisplayProgress(Dialog dialog, string title, string text, bool indeterminate, float position, string cancelText, CancellationToken token);
 
     /// <summary>
-    /// Called when a progress dialog needs to be updated.
+    /// Called when a progress dialog needs to be updated. 
     /// </summary>
     /// <param name="dialog">id of the dialog</param>
     /// <param name="position">position of the progress bar (between 0.0 and 1.0)</param>
     /// <param name="text">new text of the progress dialog </param>
-    public delegate Task UpdateProgress(Dialog dialog, float position, string? text);
+    public delegate Task UpdateProgress(Dialog dialog, float position, string text);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void DisplayErrorCallback(IntPtr data, string title, string text);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void DisplayLoginCallback(IntPtr data, IntPtr dialogId, string title, string text,
+        string defaultUsername, bool askStore);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void DisplayQuestionCallback(IntPtr data, IntPtr dialogId, string title, string text,
+        DialogQuestionType type, string cancelText, string firstActionText, string secondActionText);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void DisplayProgressCallback(IntPtr data, IntPtr dialogId, string title, string text,
+        bool indeterminate, float position, string cancelText);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void CancelCallback(IntPtr data, IntPtr dialogId);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void UpdateProgressCallback(IntPtr data, IntPtr dialogId, float position, string text);
+
+    /// <summary>Dialog callbacks to be implemented</summary>
+    internal readonly struct DialogCallbacks
+    {
+        internal DialogCallbacks(DisplayErrorCallback displayError, DisplayLoginCallback displayLogin, DisplayQuestionCallback displayQuestion,
+            DisplayProgressCallback displayProgress, CancelCallback cancel, UpdateProgressCallback updateProgress)
+        {
+            DisplayError = Marshal.GetFunctionPointerForDelegate(displayError);
+            DisplayLogin = Marshal.GetFunctionPointerForDelegate(displayLogin);
+            DisplayQuestion = Marshal.GetFunctionPointerForDelegate(displayQuestion);
+            DisplayProgress = Marshal.GetFunctionPointerForDelegate(displayProgress);
+            Cancel = Marshal.GetFunctionPointerForDelegate(cancel);
+            UpdateProgress = Marshal.GetFunctionPointerForDelegate(updateProgress);
+        }
+
+        internal readonly IntPtr DisplayError;
+
+        internal readonly IntPtr DisplayLogin;
+
+        internal readonly IntPtr DisplayQuestion;
+
+        internal readonly IntPtr DisplayProgress;
+
+        internal readonly IntPtr Cancel;
+
+        internal readonly IntPtr UpdateProgress;
+    }
 }

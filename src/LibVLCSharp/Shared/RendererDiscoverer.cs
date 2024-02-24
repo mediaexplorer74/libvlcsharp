@@ -10,9 +10,7 @@ namespace LibVLCSharp.Shared
     /// </summary>
     public class RendererDiscoverer : Internal
     {
-        RendererDiscovererEventManager? _eventManager;
-        const string Bonjour = "Bonjour_renderer";
-        const string Mdns = "microdns_renderer";
+        RendererDiscovererEventManager _eventManager;
 
         readonly struct Native
         {
@@ -41,22 +39,10 @@ namespace LibVLCSharp.Shared
         /// Create a new renderer discoverer with a LibVLC and protocol name depending on host platform
         /// </summary>
         /// <param name="libVLC">libvlc instance this will be connected to</param>
-        /// <param name="name">
-        /// The service discovery protocol name depending on platform. Use <see cref="LibVLC.RendererList"/> to find the one for your platform,
-        /// or let libvlcsharp find it for you
-        /// </param>
-        public RendererDiscoverer(LibVLC libVLC, string? name = null)
+        /// <param name="name">The service discovery protocol name depending on platform. Use <see cref="LibVLC.RendererList"/> to find the one for your platform</param>
+        public RendererDiscoverer(LibVLC libVLC, string name)
             : base(() =>
             {
-                if(string.IsNullOrEmpty(name))
-                {
-#if APPLE
-                    name = Bonjour;
-#else
-                    name = Mdns;
-#endif
-                }
-
                 var nameUtf8 = name.ToUtf8();
                 return MarshalUtils.PerformInteropAndFree(() => 
                     Native.LibVLCRendererDiscovererNew(libVLC.NativeReference, nameUtf8), nameUtf8);
@@ -105,6 +91,18 @@ namespace LibVLCSharp.Shared
             add => EventManager.AttachEvent(EventType.RendererDiscovererItemDeleted, value);
             remove => EventManager.DetachEvent(EventType.RendererDiscovererItemDeleted, value);
         }
+
+        /// <summary>
+        /// Dispose of this renderer discoverer instance
+        /// </summary>
+        /// <param name="disposing">true if called from a method</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (IsDisposed || NativeReference == IntPtr.Zero)
+                return;
+
+            base.Dispose(disposing);
+        }
     }
 
     /// <summary>
@@ -151,17 +149,17 @@ namespace LibVLCSharp.Shared
         /// <summary>
         /// Name of the renderer item
         /// </summary>
-        public string Name => Native.LibVLCRendererItemName(NativeReference).FromUtf8()!;
+        public string Name => Native.LibVLCRendererItemName(NativeReference).FromUtf8();
 
         /// <summary>
         /// Type of the renderer item
         /// </summary>
-        public string Type => Native.LibVLCRendererItemType(NativeReference).FromUtf8()!;
+        public string Type => Native.LibVLCRendererItemType(NativeReference).FromUtf8();
 
         /// <summary>
         /// IconUri of the renderer item
         /// </summary>
-        public string? IconUri => Native.LibVLCRendererItemIconUri(NativeReference).FromUtf8();
+        public string IconUri => Native.LibVLCRendererItemIconUri(NativeReference).FromUtf8();
 
         /// <summary>
         /// true if the renderer item can render video
@@ -172,5 +170,17 @@ namespace LibVLCSharp.Shared
         /// true if the renderer item can render audio
         /// </summary>
         public bool CanRenderAudio => (Native.LibVLCRendererItemFlags(NativeReference) & AudioRenderer) != 0;
+
+        /// <summary>
+        /// Dispose of this renderer item instance
+        /// </summary>
+        /// <param name="disposing">true if called from a method</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (IsDisposed || NativeReference == IntPtr.Zero)
+                return;
+
+            base.Dispose(disposing);
+        }
     }
 }

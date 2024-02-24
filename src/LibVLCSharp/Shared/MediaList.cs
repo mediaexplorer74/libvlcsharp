@@ -5,12 +5,9 @@ using System.Runtime.InteropServices;
 
 namespace LibVLCSharp.Shared
 {
-    /// <summary>
-    /// The MediaList holds a list of Media types
-    /// </summary>
     public class MediaList : Internal, IEnumerable<Media>
     {
-        MediaListEventManager? _eventManager;
+        MediaListEventManager _eventManager;
         readonly object _syncLock = new object();
         bool _nativeLock;
 
@@ -192,7 +189,7 @@ namespace LibVLCSharp.Shared
         /// <param name="position">position in array where to insert</param>
         /// <returns>media instance at position, or null if not found.
         /// In case of success, Media.Retain() is called to increase the refcount on the media. </returns>
-        public Media? this[int position] => NativeSync(() => 
+        public Media this[int position] => NativeSync(() => 
         {
             var ptr = Native.LibVLCMediaListItemAtIndex(NativeReference, position);
             return ptr == IntPtr.Zero ? null : new Media(ptr);
@@ -262,45 +259,30 @@ namespace LibVLCSharp.Shared
 
         #region Events
 
-        /// <summary>
-        /// An item has been added to the MediaList
-        /// </summary>
         public event EventHandler<MediaListItemAddedEventArgs> ItemAdded
         {
             add => EventManager.AttachEvent(EventType.MediaListItemAdded, value);
             remove => EventManager.DetachEvent(EventType.MediaListItemAdded, value);
         }
 
-        /// <summary>
-        /// An item is about to be added to the MediaList
-        /// </summary>
         public event EventHandler<MediaListWillAddItemEventArgs> WillAddItem
         {
             add => EventManager.AttachEvent(EventType.MediaListWillAddItem, value);
             remove => EventManager.DetachEvent(EventType.MediaListWillAddItem, value);
         }
 
-        /// <summary>
-        /// An item has been deleted from the MediaList
-        /// </summary>
         public event EventHandler<MediaListItemDeletedEventArgs> ItemDeleted
         {
             add => EventManager.AttachEvent(EventType.MediaListItemDeleted, value);
             remove => EventManager.DetachEvent(EventType.MediaListItemDeleted, value);
         }
 
-        /// <summary>
-        /// An item is about to be deleted from the MediaList
-        /// </summary>
         public event EventHandler<MediaListWillDeleteItemEventArgs> WillDeleteItem
         {
             add => EventManager.AttachEvent(EventType.MediaListWillDeleteItem, value);
             remove => EventManager.DetachEvent(EventType.MediaListWillDeleteItem, value);
         }
 
-        /// <summary>
-        /// The media list reached its end
-        /// </summary>
         public event EventHandler<EventArgs> EndReached
         {
             add => EventManager.AttachEvent(EventType.MediaListEndReached, value);
@@ -308,19 +290,23 @@ namespace LibVLCSharp.Shared
         }
 
         #endregion 
-        
-        /// <summary>
-        /// Returns an enumerator that iterates through a collection of media
-        /// </summary>
-        /// <returns>an enumerator over a media collection</returns>
+
+        protected override void Dispose(bool disposing)
+        {
+            if (IsDisposed || NativeReference == IntPtr.Zero)
+                return;
+
+            base.Dispose(disposing);
+        }
+
         public IEnumerator<Media> GetEnumerator() => new MediaListEnumerator(this);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        internal class MediaListEnumerator : IEnumerator<Media>
+        public class MediaListEnumerator : IEnumerator<Media>
         {
             int position = -1;
-            MediaList? _mediaList;
+            MediaList _mediaList;
 
             internal MediaListEnumerator(MediaList mediaList)
             {
@@ -330,7 +316,7 @@ namespace LibVLCSharp.Shared
             public bool MoveNext()
             {
                 position++;
-                return position < (_mediaList?.Count ?? 0);
+                return position < _mediaList.Count;
             }
 
             void IEnumerator.Reset()
@@ -345,18 +331,7 @@ namespace LibVLCSharp.Shared
             }
 
             object IEnumerator.Current => Current;
-
-            public Media Current
-            {
-                get
-                {
-                    if (_mediaList == null)
-                    {
-                        throw new ObjectDisposedException(nameof(MediaListEnumerator));
-                    }
-                    return _mediaList[position] ?? throw new ArgumentOutOfRangeException(nameof(position));
-                }
-            }
+            public Media Current => _mediaList[position];
         }
     }
 }

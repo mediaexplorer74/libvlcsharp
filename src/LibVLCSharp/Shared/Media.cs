@@ -15,6 +15,9 @@ namespace LibVLCSharp.Shared
     /// </summary>
     public class Media : Internal
     {
+        static readonly ConcurrentDictionary<IntPtr, StreamData> DicStreams = new ConcurrentDictionary<IntPtr, StreamData>();
+        static int _streamIndex;
+        
         internal struct Native
         {
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
@@ -43,8 +46,7 @@ namespace LibVLCSharp.Shared
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_media_new_callbacks")]
-            internal static extern IntPtr LibVLCMediaNewCallbacks(IntPtr libVLC, InternalOpenMedia openCb, InternalReadMedia readCb, 
-                InternalSeekMedia? seekCb, InternalCloseMedia closeCb, IntPtr opaque);
+            internal static extern IntPtr LibVLCMediaNewCallbacks(IntPtr libVLC, IntPtr openCb, IntPtr readCb, IntPtr seekCb, IntPtr closeCb, IntPtr opaque);
 
             [DllImport(Constants.LibraryName, CallingConvention = CallingConvention.Cdecl,
                 EntryPoint = "libvlc_media_add_option")]
@@ -154,104 +156,22 @@ namespace LibVLCSharp.Shared
                 EntryPoint = "libvlc_media_get_codec_description")]
             internal static extern IntPtr LibvlcMediaGetCodecDescription(TrackType type, uint codec);
         }
-
-        Media(Func<IntPtr> create, Action<IntPtr> release, params string[] options)
-            : base(create, release)
-        {
-            if(options == null) return;
-
-            foreach(var optionUtf8 in options.ToUtf8())
-                if(optionUtf8 != IntPtr.Zero)
-                    MarshalUtils.PerformInteropAndFree(() => Native.LibVLCMediaAddOption(NativeReference, optionUtf8), optionUtf8);
-        }
-
+        
         /// <summary>
         /// Media Constructs a libvlc Media instance
         /// </summary>
         /// <param name="libVLC">A libvlc instance</param>
         /// <param name="mrl">A path, location, or node name, depending on the 3rd parameter</param>
         /// <param name="type">The type of the 2nd argument.</param>
-        /// <param name="options">the libvlc options, in the form of ":your-option"</param>
-        public Media(LibVLC libVLC, string mrl, FromType type = FromType.FromPath, params string[] options)
-            : this(() => SelectNativeCtor(libVLC, mrl, type), Native.LibVLCMediaRelease, options)
-        {
-        }
-
-        /// <summary>
-        /// Media Constructs a libvlc Media instance
-        /// </summary>
-        /// <param name="libVLC">A libvlc instance</param>
-        /// <param name="uri">The absolute URI of the resource.</param>
-        /// <param name="options">the libvlc options, in the form of ":your-option"</param>
-        public Media(LibVLC libVLC, Uri uri, params string[] options)
-            : this(() => SelectNativeCtor(libVLC, uri?.AbsoluteUri ?? string.Empty, FromType.FromLocation),
-                  Native.LibVLCMediaRelease,
-                  options)
-        {
-        }
-
-        /// <summary>
-        /// Create a media for an already open file descriptor.
-        /// The file descriptor shall be open for reading(or reading and writing).
-        ///
-        /// Regular file descriptors, pipe read descriptors and character device
-        /// descriptors(including TTYs) are supported on all platforms.
-        /// Block device descriptors are supported where available.
-        /// Directory descriptors are supported on systems that provide fdopendir().
-        /// Sockets are supported on all platforms where they are file descriptors,
-        /// i.e.all except Windows.
-        ///
-        /// \note This library will <b>not</b> automatically close the file descriptor
-        /// under any circumstance.Nevertheless, a file descriptor can usually only be
-        /// rendered once in a media player.To render it a second time, the file
-        /// descriptor should probably be rewound to the beginning with lseek().
-        /// </summary>
-        /// <param name="libVLC">A libvlc instance</param>
-        /// <param name="fd">open file descriptor</param>
-        /// <param name="options">the libvlc options, in the form of ":your-option"</param>
-        public Media(LibVLC libVLC, int fd, params string[] options)
-            : this(() => Native.LibVLCMediaNewFd(libVLC.NativeReference, fd), Native.LibVLCMediaRelease, options)
-        {
-        }
-
-        /// <summary>
-        /// Create a media from a media list
-        /// </summary>
-        /// <param name="mediaList">media list to create media from</param>
-        public Media(MediaList mediaList)
-            : base(() => Native.LibVLCMediaListMedia(mediaList.NativeReference), Native.LibVLCMediaRelease)
-        {
-        }
-
-        /// <summary>
-        /// Create a media from a MediaInput
-        /// requires libvlc 3.0 or higher
-        /// </summary>
-        /// <param name="libVLC">the libvlc instance</param>
-        /// <param name="input">the media to be used by libvlc. LibVLCSharp will NOT dispose or close it.
-        /// Use <see cref="StreamMediaInput"/> or implement your own.</param>
-        /// <param name="options">the libvlc options, in the form of ":your-option"</param>
-        public Media(LibVLC libVLC, MediaInput input, params string[] options)
-            : this(() => CtorFromInput(libVLC, input), Native.LibVLCMediaRelease, options)
-        {
-        }
-
-        internal Media(IntPtr mediaPtr)
-            : base(() => mediaPtr, Native.LibVLCMediaRelease)
+        public Media(LibVLC libVLC, string mrl, FromType type = FromType.FromPath)
+            : base(() => SelectNativeCtor(libVLC, mrl, type), Native.LibVLCMediaRelease)
         {
         }
 
         static IntPtr SelectNativeCtor(LibVLC libVLC, string mrl, FromType type)
         {
-            if (libVLC == null)
-                throw new ArgumentNullException(nameof(libVLC));
-            if (string.IsNullOrEmpty(mrl))
-                throw new ArgumentNullException(nameof(mrl));
-
-            if(PlatformHelper.IsWindows && type == FromType.FromPath)
-            {
-                mrl = mrl.Replace("/", @"\");
-            }
+            if (libVLC == null) throw new ArgumentNullException(nameof(libVLC));
+            if (string.IsNullOrEmpty(mrl)) throw new ArgumentNullException(nameof(mrl));
 
             var mrlPtr = mrl.ToUtf8();
             if (mrlPtr == IntPtr.Zero)
@@ -279,29 +199,86 @@ namespace LibVLCSharp.Shared
             return result;
         }
 
-        static IntPtr CtorFromInput(LibVLC libVLC, MediaInput input)
+        /// <summary>
+        /// Create a media for an already open file descriptor.
+        /// The file descriptor shall be open for reading(or reading and writing).
+        ///
+        /// Regular file descriptors, pipe read descriptors and character device
+        /// descriptors(including TTYs) are supported on all platforms.
+        /// Block device descriptors are supported where available.
+        /// Directory descriptors are supported on systems that provide fdopendir().
+        /// Sockets are supported on all platforms where they are file descriptors,
+        /// i.e.all except Windows.
+        /// 
+        /// \note This library will <b>not</b> automatically close the file descriptor
+        /// under any circumstance.Nevertheless, a file descriptor can usually only be
+        /// rendered once in a media player.To render it a second time, the file
+        /// descriptor should probably be rewound to the beginning with lseek().
+        /// </summary>
+        /// <param name="libVLC">A libvlc instance</param>
+        /// <param name="fd">open file descriptor</param>
+        public Media(LibVLC libVLC, int fd)
+            : base(() => Native.LibVLCMediaNewFd(libVLC.NativeReference, fd), Native.LibVLCMediaRelease)
         {
-            if (libVLC == null)
-                throw new ArgumentNullException(nameof(libVLC));
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
-
-            return Native.LibVLCMediaNewCallbacks(libVLC.NativeReference,
-                OpenMediaCallbackHandle,
-                ReadMediaCallbackHandle,
-                input.CanSeek ? SeekMediaCallbackHandle : null,
-                CloseMediaCallbackHandle,
-                GCHandle.ToIntPtr(input.GcHandle));
         }
 
-        /// <summary>Add an option to the media.
-        /// <example>
-        /// <code>
-        /// // example <br/>
-        /// media.AddOption(":no-audio");
-        /// </code>
-        /// </example></summary>
-        /// <param name="option">the media option, in the form of ":your-option"</param>
+        /// <summary>
+        /// Create a media from a media list
+        /// </summary>
+        /// <param name="mediaList">media list to create media from</param>
+        public Media(MediaList mediaList)
+            : base(() => Native.LibVLCMediaListMedia(mediaList.NativeReference), Native.LibVLCMediaRelease)
+        {
+        }
+
+        /// <summary>
+        /// Create a media from a .NET Stream
+        /// requires libvlc 3.0 or higher
+        /// </summary>
+        /// <param name="libVLC">the libvlc instance</param>
+        /// <param name="stream">the .NET Stream to be used by libvlc. LibVLCSharp will NOT dispose or close it.</param>
+        /// <param name="options">the libvlc options</param>
+        public Media(LibVLC libVLC, Stream stream, params string[] options)
+            : base(() => CtorFromCallbacks(libVLC, stream), Native.LibVLCMediaRelease)
+        {
+            foreach(var option in options)
+            {
+                var optionUtf8 = option.ToUtf8();
+
+                MarshalUtils.PerformInteropAndFree(() => Native.LibVLCMediaAddOption(NativeReference, optionUtf8), optionUtf8);
+            }
+        }
+        
+        static IntPtr CtorFromCallbacks(LibVLC libVLC, Stream stream)
+        {
+            if (libVLC == null) throw new ArgumentNullException(nameof(libVLC));
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+
+            var openMedia = new OpenMedia(CallbackOpenMedia);
+            var readMedia = new ReadMedia(CallbackReadMedia);
+            var seekMedia = new SeekMedia(CallbackSeekMedia);
+            var closeMedia = new CloseMedia(CallbackCloseMedia);
+
+            var opaque = AddStream(stream, openMedia, readMedia, seekMedia, closeMedia);
+
+            if (opaque == IntPtr.Zero)
+                throw new InvalidOperationException("Cannot create opaque parameter");
+
+            return Native.LibVLCMediaNewCallbacks(libVLC.NativeReference,
+                Marshal.GetFunctionPointerForDelegate(openMedia),
+                Marshal.GetFunctionPointerForDelegate(readMedia),
+                Marshal.GetFunctionPointerForDelegate(seekMedia),
+                Marshal.GetFunctionPointerForDelegate(closeMedia),
+                opaque);
+        }
+
+        internal Media(IntPtr mediaPtr)
+            : base(() => mediaPtr, Native.LibVLCMediaRelease)
+        {
+        }
+
+        /// <summary>Add an option to the media.</summary>
+        /// <param name="option">the media option</param>
         /// <remarks>
         /// <para>This option will be used to determine how the media_player will</para>
         /// <para>read the media. This allows to use VLC's advanced</para>
@@ -358,7 +335,7 @@ namespace LibVLCSharp.Shared
             MarshalUtils.PerformInteropAndFree(() => Native.LibVLCMediaAddOptionFlag(NativeReference, optionUtf8, flags), optionUtf8);
         }
 
-        string? _mrl;
+        string _mrl;
         /// <summary>Get the media resource locator (mrl) from a media descriptor object</summary>
         public string Mrl
         {
@@ -369,7 +346,7 @@ namespace LibVLCSharp.Shared
                     var mrlPtr = Native.LibVLCMediaGetMrl(NativeReference);
                     _mrl = mrlPtr.FromUtf8(libvlcFree: true);
                 }
-                return _mrl!;
+                return _mrl;
             }
         }
 
@@ -387,7 +364,7 @@ namespace LibVLCSharp.Shared
         /// <remarks>
         /// If the media has not yet been parsed this will return NULL.
         /// </remarks>
-        public string? Meta(MetadataType metadataType)
+        public string Meta(MetadataType metadataType)
         {
             var metaPtr = Native.LibVLCMediaGetMeta(NativeReference, metadataType);
             return metaPtr.FromUtf8(libvlcFree: true);
@@ -398,7 +375,7 @@ namespace LibVLCSharp.Shared
         /// <para>libvlc_media_save_meta in order to save the meta)</para>
         /// </summary>
         /// <param name="metadataType">the <see cref="MetadataType"/>  to write</param>
-        /// <param name="metaValue">the media's meta</param>
+        /// <param name="value">the media's meta</param>
         public void SetMeta(MetadataType metadataType, string metaValue)
         {
             if(string.IsNullOrEmpty(metaValue)) throw new ArgumentNullException(metaValue);
@@ -420,9 +397,9 @@ namespace LibVLCSharp.Shared
         /// structure that contain the statistics about the media
         /// </summary>
         public MediaStats Statistics => Native.LibVLCMediaGetStats(NativeReference, out var mediaStats) == 0 
-            ? default : mediaStats;
+            ? default(MediaStats) : mediaStats;
 
-        MediaEventManager? _eventManager;
+        MediaEventManager _eventManager;
         /// <summary>
         /// <para>Get event manager from media descriptor object.</para>
         /// <para>NOTE: this function doesn't increment reference counting.</para>
@@ -459,19 +436,21 @@ namespace LibVLCSharp.Shared
         {
             cancellationToken.ThrowIfCancellationRequested();
             
-            var tcs = new TaskCompletionSource<MediaParsedStatus>();
+            TaskCompletionSource<MediaParsedStatus> tcs = null;
             var cancellationTokenRegistration = cancellationToken.Register(() =>
             {
                 ParsedChanged -= OnParsedChanged;
                 Native.LibVLCMediaParseStop(NativeReference);
-                tcs.TrySetCanceled();
+                tcs?.TrySetCanceled();
             });
 
-            void OnParsedChanged(object? sender, MediaParsedChangedEventArgs mediaParsedChangedEventArgs) 
-                => tcs.TrySetResult(mediaParsedChangedEventArgs.ParsedStatus);
+            void OnParsedChanged(object sender, MediaParsedChangedEventArgs mediaParsedChangedEventArgs) 
+                => tcs?.TrySetResult(mediaParsedChangedEventArgs.ParsedStatus);
 
             try
             {
+                tcs = new TaskCompletionSource<MediaParsedStatus>();
+                        
                 ParsedChanged += OnParsedChanged;
 
                 var result = Native.LibVLCMediaParseWithOptions(NativeReference, options, timeout);
@@ -536,16 +515,13 @@ namespace LibVLCSharp.Shared
         /// <returns>list of media descriptor subitems or NULL</returns>
         public MediaList SubItems => new MediaList(Native.LibVLCMediaSubitems(NativeReference));
        
-        /// <summary>
-        /// The type of the media
-        /// </summary>
         public MediaType Type => Native.LibVLCMediaGetType(NativeReference);
 
         /// <summary>Add a slave to the current media.</summary>
         /// <param name="type">subtitle or audio</param>
         /// <param name="priority">from 0 (low priority) to 4 (high priority)</param>
         /// <param name="uri">Uri of the slave (should contain a valid scheme).</param>
-        /// <returns>true on success, false on error.</returns>
+        /// <returns>0 on success, -1 on error.</returns>
         /// <remarks>
         /// <para>A slave is an external input source that may contains an additional subtitle</para>
         /// <para>track (like a .srt) or an additional audio track (like a .ac3).</para>
@@ -557,26 +533,7 @@ namespace LibVLCSharp.Shared
         public bool AddSlave(MediaSlaveType type, uint priority, string uri)
         {
             var uriUtf8 = uri.ToUtf8();
-            return MarshalUtils.PerformInteropAndFree(() => Native.LibVLCMediaAddSlaves(NativeReference, type, priority, uriUtf8) == 0, uriUtf8);
-        }
-
-        /// <summary>Add a slave to the current media.</summary>
-        /// <param name="type">subtitle or audio</param>
-        /// <param name="priority">from 0 (low priority) to 4 (high priority)</param>
-        /// <param name="uri">Uri of the slave (should contain a valid scheme).</param>
-        /// <returns>true on success, false on error.</returns>
-        /// <remarks>
-        /// <para>A slave is an external input source that may contains an additional subtitle</para>
-        /// <para>track (like a .srt) or an additional audio track (like a .ac3).</para>
-        /// <para>This function must be called before the media is parsed (via</para>
-        /// <para>libvlc_media_parse_with_options()) or before the media is played (via</para>
-        /// <para>libvlc_media_player_play())</para>
-        /// <para>LibVLC 3.0.0 and later.</para>
-        /// </remarks>
-        public bool AddSlave(MediaSlaveType type, uint priority, Uri uri)
-        {
-            var uriUtf8 = uri?.AbsoluteUri?.ToUtf8() ?? IntPtr.Zero;
-            return MarshalUtils.PerformInteropAndFree(() => Native.LibVLCMediaAddSlaves(NativeReference, type, priority, uriUtf8) == 0, uriUtf8);
+            return MarshalUtils.PerformInteropAndFree(() => Native.LibVLCMediaAddSlaves(NativeReference, type, priority, uriUtf8) != 0, uriUtf8);
         }
 
         /// <summary>
@@ -606,26 +563,154 @@ namespace LibVLCSharp.Shared
         /// <param name="type">The type of the track</param>
         /// <param name="codec">the codec or fourcc</param>
         /// <returns>the codec description</returns>
-        public string CodecDescription(TrackType type, uint codec) => Native.LibvlcMediaGetCodecDescription(type, codec).FromUtf8()!;
+        public string CodecDescription(TrackType type, uint codec) => Native.LibvlcMediaGetCodecDescription(type, codec).FromUtf8();
 
-        /// <summary>
-        /// Equality override for this media instance
-        /// </summary>
-        /// <param name="obj">the media to compare this one with</param>
-        /// <returns></returns>
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
             return obj is Media media &&
                    EqualityComparer<IntPtr>.Default.Equals(NativeReference, media.NativeReference);
         }
 
-        /// <summary>
-        /// Custom hascode implemenation for this Media instance
-        /// </summary>
-        /// <returns>the hashcode for this Media instance</returns>
         public override int GetHashCode()
         {
-            return NativeReference.GetHashCode();
+            return this.NativeReference.GetHashCode();
+        }
+
+        internal class StreamData
+        {
+            internal IntPtr Handle { get; set; }
+            internal Stream Stream { get; set; }
+            internal byte[] Buffer { get; set; }
+            internal OpenMedia OpenMedia { get; set; }
+            internal ReadMedia ReadMedia { get; set; }
+            internal SeekMedia SeekMedia { get; set; }
+            internal CloseMedia CloseMedia { get; set; }
+        }
+
+        #region private
+
+        [MonoPInvokeCallback(typeof(OpenMedia))]
+        static int CallbackOpenMedia(IntPtr opaque, ref IntPtr data, out ulong size)
+        {
+            data = opaque;
+
+            try
+            {
+                var streamData = GetStream(opaque);
+                try
+                {
+                    size = (ulong)streamData.Stream.Length;
+                }
+                catch (Exception)
+                {
+                    // byte length of the bitstream or UINT64_MAX if unknown
+                    size = ulong.MaxValue;
+                }
+
+                if (streamData.Stream.CanSeek)
+                {
+                    streamData.Stream.Seek(0L, SeekOrigin.Begin);
+                }
+
+                return 0;
+            }
+            catch (Exception)
+            {
+                size = 0UL;
+                return -1;
+            }
+        }
+
+        [MonoPInvokeCallback(typeof(ReadMedia))]
+        static int CallbackReadMedia(IntPtr opaque, IntPtr buf, uint len)
+        {
+            try
+            {
+                var streamData = GetStream(opaque);
+                int read;
+
+                lock (streamData)
+                {
+                    var canRead = Math.Min((int)len, streamData.Buffer.Length);
+                    read = streamData.Stream.Read(streamData.Buffer, 0, canRead);
+                    Marshal.Copy(streamData.Buffer, 0, buf, read);
+                }
+
+                return read;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        [MonoPInvokeCallback(typeof(SeekMedia))]
+        static int CallbackSeekMedia(IntPtr opaque, ulong offset)
+        {
+            try
+            {
+                var streamData = GetStream(opaque);
+                streamData.Stream.Seek((long)offset, SeekOrigin.Begin);
+                return 0;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        [MonoPInvokeCallback(typeof(CloseMedia))]
+        static void CallbackCloseMedia(IntPtr opaque)
+        {
+            try
+            {
+                var streamData = GetStream(opaque);
+
+                if (streamData.Stream.CanSeek)
+                    streamData.Stream.Seek(0, SeekOrigin.Begin);
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+        }
+
+        static IntPtr AddStream(Stream stream, OpenMedia openMedia, ReadMedia readMedia, SeekMedia seekMedia, CloseMedia closeMedia)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            IntPtr handle;
+
+            lock (DicStreams)
+            {
+                _streamIndex++;
+
+                handle = new IntPtr(_streamIndex);
+                DicStreams[handle] = new StreamData
+                {
+                    Buffer = new byte[0x4000],
+                    Handle = handle,
+                    Stream = stream,
+                    OpenMedia = openMedia,
+                    ReadMedia = readMedia,
+                    SeekMedia = seekMedia,
+                    CloseMedia = closeMedia
+                };
+            }
+            return handle;
+        }
+
+        static StreamData GetStream(IntPtr handle)
+        {
+            return !DicStreams.TryGetValue(handle, out var result) ? null : result;
+        }
+
+        static void RemoveStream(IntPtr handle)
+        {
+            DicStreams.TryRemove(handle, out var result);
         }
 
         /// <summary>Increments the native reference counter for the media</summary>
@@ -635,192 +720,127 @@ namespace LibVLCSharp.Shared
                 Native.LibVLCMediaRetain(NativeReference);
         }
 
-        internal override void OnNativeInstanciationError()
-        {
-            throw new VLCException("Failed to instanciate the Media on the native side. " +
-                    $"{Environment.NewLine}Have you installed the latest LibVLC package from nuget for your target platform?" +
-                    $"{Environment.NewLine}Is your MRL correct? Do check the native LibVLC verbose logs for more information.");
-        }
-
-        #region MediaFromStream
-
-        static readonly InternalOpenMedia OpenMediaCallbackHandle = OpenMediaCallback;
-        static readonly InternalReadMedia ReadMediaCallbackHandle = ReadMediaCallback;
-        static readonly InternalSeekMedia SeekMediaCallbackHandle = SeekMediaCallback;
-        static readonly InternalCloseMedia CloseMediaCallbackHandle = CloseMediaCallback;
-
-        [MonoPInvokeCallback(typeof(InternalOpenMedia))]
-        static int OpenMediaCallback(IntPtr opaque, ref IntPtr data, out ulong size)
-        {
-            data = opaque;
-            var input = MarshalUtils.GetInstance<MediaInput>(opaque);
-            if (input == null)
-            {
-                size = 0UL;
-                return -1;
-            }
-
-            return input.Open(out size) ? 0 : -1;
-        }
-
-        [MonoPInvokeCallback(typeof(InternalReadMedia))]
-        static int ReadMediaCallback(IntPtr opaque, IntPtr buf, uint len)
-        {
-            var input = MarshalUtils.GetInstance<MediaInput>(opaque);
-            if (input == null)
-            {
-                return -1;
-            }
-            return input.Read(buf, len);
-        }
-
-        [MonoPInvokeCallback(typeof(InternalSeekMedia))]
-        static int SeekMediaCallback(IntPtr opaque, ulong offset)
-        {
-            var input = MarshalUtils.GetInstance<MediaInput>(opaque);
-            if (input == null)
-            {
-                return -1;
-            }
-            return input.Seek(offset) ? 0 : -1;
-        }
-
-        [MonoPInvokeCallback(typeof(InternalCloseMedia))]
-        static void CloseMediaCallback(IntPtr opaque)
-        {
-            var input = MarshalUtils.GetInstance<MediaInput>(opaque);
-            input?.Close();
-        }
-
-        #endregion
-
-        #region MediaFromCallbacks
-
-        /// <summary>
-        /// <para>It consists of a media location and various optional meta data.</para>
-        /// <para>@{</para>
-        /// <para></para>
-        /// <para>LibVLC media item/descriptor external API</para>
-        /// </summary>
-        /// <summary>Callback prototype to open a custom bitstream input media.</summary>
-        /// <param name="opaque">private pointer as passed to libvlc_media_new_callbacks()</param>
-        /// <param name="data">storage space for a private data pointer [OUT]</param>
-        /// <param name="size">byte length of the bitstream or UINT64_MAX if unknown [OUT]</param>
-        /// <returns>
-        /// <para>0 on success, non-zero on error. In case of failure, the other</para>
-        /// <para>callbacks will not be invoked and any value stored in *datap and *sizep is</para>
-        /// <para>discarded.</para>
-        /// </returns>
-        /// <remarks>
-        /// <para>The same media item can be opened multiple times. Each time, this callback</para>
-        /// <para>is invoked. It should allocate and initialize any instance-specific</para>
-        /// <para>resources, then store them in *datap. The instance resources can be freed</para>
-        /// <para>in the</para>
-        /// <para>For convenience, *datap is initially NULL and *sizep is initially 0.</para>
-        /// </remarks>
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate int InternalOpenMedia(IntPtr opaque, ref IntPtr data, out ulong size);
-
-        /// <summary>Callback prototype to read data from a custom bitstream input media.</summary>
-        /// <param name="opaque">private pointer as set by the</param>
-        /// <param name="buf">start address of the buffer to read data into</param>
-        /// <param name="len">bytes length of the buffer</param>
-        /// <returns>
-        /// <para>strictly positive number of bytes read, 0 on end-of-stream,</para>
-        /// <para>or -1 on non-recoverable error</para>
-        /// </returns>
-        /// <remarks>
-        /// <para>callback</para>
-        /// <para>If no data is immediately available, then the callback should sleep.</para>
-        /// <para>The application is responsible for avoiding deadlock situations.</para>
-        /// <para>In particular, the callback should return an error if playback is stopped;</para>
-        /// <para>if it does not return, then libvlc_media_player_stop() will never return.</para>
-        /// </remarks>
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate int InternalReadMedia(IntPtr opaque, IntPtr buf, uint len);
-
-        /// <summary>Callback prototype to seek a custom bitstream input media.</summary>
-        /// <param name="opaque">private pointer as set by the</param>
-        /// <param name="offset">absolute byte offset to seek to</param>
-        /// <returns>0 on success, -1 on error.</returns>
-        /// <remarks>callback</remarks>
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate int InternalSeekMedia(IntPtr opaque, ulong offset);
-
-        /// <summary>Callback prototype to close a custom bitstream input media.</summary>
-        /// <param name="opaque">private pointer as set by the</param>
-        /// <remarks>callback</remarks>
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate void InternalCloseMedia(IntPtr opaque);
         #endregion
 
         #region Events
 
-        /// <summary>
-        /// The meta information changed
-        /// </summary>
         public event EventHandler<MediaMetaChangedEventArgs> MetaChanged
         {
             add => EventManager.AttachEvent(EventType.MediaMetaChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaMetaChanged, value);
         }
 
-        /// <summary>
-        /// The parsing status changed
-        /// </summary>
         public event EventHandler<MediaParsedChangedEventArgs> ParsedChanged
         {
             add => EventManager.AttachEvent(EventType.MediaParsedChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaParsedChanged, value);
         }
 
-        /// <summary>
-        /// A sub item was added to this media's MediaList
-        /// </summary>
-        public event EventHandler<MediaSubItemAddedEventArgs> SubItemAdded
+        public event EventHandler<MediaParsedChangedEventArgs> SubItemAdded
         {
             add => EventManager.AttachEvent(EventType.MediaSubItemAdded, value);
             remove => EventManager.DetachEvent(EventType.MediaSubItemAdded, value);
         }
 
-        /// <summary>
-        /// The duration of the media changed
-        /// </summary>
         public event EventHandler<MediaDurationChangedEventArgs> DurationChanged
         {
             add => EventManager.AttachEvent(EventType.MediaDurationChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaDurationChanged, value);
         }
 
-        /// <summary>
-        /// The media was freed on the native side
-        /// </summary>
         public event EventHandler<MediaFreedEventArgs> MediaFreed
         {
             add => EventManager.AttachEvent(EventType.MediaFreed, value);
             remove => EventManager.DetachEvent(EventType.MediaFreed, value);
         }
 
-        /// <summary>
-        /// The media state changed
-        /// </summary>
         public event EventHandler<MediaStateChangedEventArgs> StateChanged
         {
             add => EventManager.AttachEvent(EventType.MediaStateChanged, value);
             remove => EventManager.DetachEvent(EventType.MediaStateChanged, value);
         }
 
-        /// <summary>
-        /// A sub item tree was added to this media
-        /// </summary>
-        public event EventHandler<MediaSubItemTreeAddedEventArgs> SubItemTreeAdded
+        public event EventHandler<MediaSubItemAddedEventArgs> SubItemTreeAdded
         {
             add => EventManager.AttachEvent(EventType.MediaSubItemTreeAdded, value);
             remove => EventManager.DetachEvent(EventType.MediaSubItemTreeAdded, value);
         }
 
         #endregion
+
+        /// <summary>
+        /// Dispose of this media
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            if (IsDisposed || NativeReference == IntPtr.Zero)
+                return;
+
+            base.Dispose(disposing);
+        }
     }
+
+    #region Callbacks
+
+    /// <summary>
+    /// <para>It consists of a media location and various optional meta data.</para>
+    /// <para>@{</para>
+    /// <para></para>
+    /// <para>LibVLC media item/descriptor external API</para>
+    /// </summary>
+    /// <summary>Callback prototype to open a custom bitstream input media.</summary>
+    /// <param name="opaque">private pointer as passed to libvlc_media_new_callbacks()</param>
+    /// <param name="data">storage space for a private data pointer [OUT]</param>
+    /// <param name="size">byte length of the bitstream or UINT64_MAX if unknown [OUT]</param>
+    /// <returns>
+    /// <para>0 on success, non-zero on error. In case of failure, the other</para>
+    /// <para>callbacks will not be invoked and any value stored in *datap and *sizep is</para>
+    /// <para>discarded.</para>
+    /// </returns>
+    /// <remarks>
+    /// <para>The same media item can be opened multiple times. Each time, this callback</para>
+    /// <para>is invoked. It should allocate and initialize any instance-specific</para>
+    /// <para>resources, then store them in *datap. The instance resources can be freed</para>
+    /// <para>in the</para>
+    /// <para>For convenience, *datap is initially NULL and *sizep is initially 0.</para>
+    /// </remarks>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate int OpenMedia(IntPtr opaque, ref IntPtr data, out ulong size);
+
+    /// <summary>Callback prototype to read data from a custom bitstream input media.</summary>
+    /// <param name="opaque">private pointer as set by the</param>
+    /// <param name="buf">start address of the buffer to read data into</param>
+    /// <param name="len">bytes length of the buffer</param>
+    /// <returns>
+    /// <para>strictly positive number of bytes read, 0 on end-of-stream,</para>
+    /// <para>or -1 on non-recoverable error</para>
+    /// </returns>
+    /// <remarks>
+    /// <para>callback</para>
+    /// <para>If no data is immediately available, then the callback should sleep.</para>
+    /// <para>The application is responsible for avoiding deadlock situations.</para>
+    /// <para>In particular, the callback should return an error if playback is stopped;</para>
+    /// <para>if it does not return, then libvlc_media_player_stop() will never return.</para>
+    /// </remarks>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate int ReadMedia(IntPtr opaque, IntPtr buf, uint len);
+
+    /// <summary>Callback prototype to seek a custom bitstream input media.</summary>
+    /// <param name="opaque">private pointer as set by the</param>
+    /// <param name="offset">absolute byte offset to seek to</param>
+    /// <returns>0 on success, -1 on error.</returns>
+    /// <remarks>callback</remarks>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate int SeekMedia(IntPtr opaque, ulong offset);
+
+    /// <summary>Callback prototype to close a custom bitstream input media.</summary>
+    /// <param name="opaque">private pointer as set by the</param>
+    /// <remarks>callback</remarks>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void CloseMedia(IntPtr opaque);
+
+    #endregion
 
     #region enums
 
@@ -958,139 +978,34 @@ namespace LibVLCSharp.Shared
         Audio = 1
     }
 
-    /// <summary>
-    /// Meta data types
-    /// </summary>
+    /// <summary>Meta data types</summary>
     public enum MetadataType
     {
-        /// <summary>
-        /// Title metadata
-        /// </summary>
         Title = 0,
-
-        /// <summary>
-        /// Artist metadata
-        /// </summary>
         Artist = 1,
-
-        /// <summary>
-        /// Genre metadata
-        /// </summary>
         Genre = 2,
-
-        /// <summary>
-        /// Copyright metadata
-        /// </summary>
         Copyright = 3,
-
-        /// <summary>
-        /// Album metadata
-        /// </summary>
         Album = 4,
-
-        /// <summary>
-        /// Track number metadata
-        /// </summary>
         TrackNumber = 5,
-
-        /// <summary>
-        /// Description metadata
-        /// </summary>
         Description = 6,
-
-        /// <summary>
-        /// Rating metadata
-        /// </summary>
         Rating = 7,
-
-        /// <summary>
-        /// Date metadata
-        /// </summary>
         Date = 8,
-
-        /// <summary>
-        /// Setting metadata
-        /// </summary>
         Setting = 9,
-
-        /// <summary>
-        /// URL metadata
-        /// </summary>
         URL = 10,
-
-        /// <summary>
-        /// Language metadata
-        /// </summary>
         Language = 11,
-
-        /// <summary>
-        /// Now playing metadata
-        /// </summary>
         NowPlaying = 12,
-
-        /// <summary>
-        /// Publisher metadata
-        /// </summary>
         Publisher = 13,
-
-        /// <summary>
-        /// Encoded by metadata
-        /// </summary>
         EncodedBy = 14,
-
-        /// <summary>
-        /// Artwork URL metadata
-        /// </summary>
         ArtworkURL = 15,
-
-        /// <summary>
-        /// Track ID metadata
-        /// </summary>
         TrackID = 16,
-
-        /// <summary>
-        /// Total track metadata
-        /// </summary>
         TrackTotal = 17,
-
-        /// <summary>
-        /// Director metadata
-        /// </summary>
         Director = 18,
-
-        /// <summary>
-        /// Season metadata
-        /// </summary>
         Season = 19,
-
-        /// <summary>
-        /// Episode metadata
-        /// </summary>
         Episode = 20,
-
-        /// <summary>
-        /// Show name metadata
-        /// </summary>
         ShowName = 21,
-
-        /// <summary>
-        /// Actors metadata
-        /// </summary>
         Actors = 22,
-
-        /// <summary>
-        /// Album artist metadata
-        /// </summary>
         AlbumArtist = 23,
-
-        /// <summary>
-        /// Disc number metadata
-        /// </summary>
         DiscNumber = 24,
-
-        /// <summary>
-        /// Disc total metadata
-        /// </summary>
         DiscTotal = 25
     }
 
@@ -1152,24 +1067,9 @@ namespace LibVLCSharp.Shared
     /// </remarks>
     public enum MediaParsedStatus
     {
-        /// <summary>
-        /// Parsing was skipped
-        /// </summary>
         Skipped = 1,
-
-        /// <summary>
-        /// Parsing failed
-        /// </summary>
         Failed = 2,
-
-        /// <summary>
-        /// Parsing timed out
-        /// </summary>
         Timeout = 3,
-
-        /// <summary>
-        /// Parsing completed successfully
-        /// </summary>
         Done = 4
     }
 
@@ -1177,34 +1077,11 @@ namespace LibVLCSharp.Shared
     /// <remarks>libvlc_media_get_type</remarks>
     public enum MediaType
     {
-        /// <summary>
-        /// Unknown media type
-        /// </summary>
         Unknown = 0,
-
-        /// <summary>
-        /// File type
-        /// </summary>
         File = 1,
-
-        /// <summary>
-        /// Directory type
-        /// </summary>
         Directory = 2,
-
-        /// <summary>
-        /// Disc type
-        /// </summary>
         Disc = 3,
-
-        /// <summary>
-        /// Stream type
-        /// </summary>
         Stream = 4,
-
-        /// <summary>
-        /// Playlist type
-        /// </summary>
         Playlist = 5
     }
 

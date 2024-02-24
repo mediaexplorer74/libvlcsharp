@@ -30,31 +30,31 @@ namespace LibVLCSharp.Shared
             }
         }
 
-        uint _fileCaching;
+        int _fileCaching;
         /// <summary>
         /// Caching value for local files, in milliseconds [0 .. 60000ms]
         /// </summary>
-        public uint FileCaching
+        public int FileCaching
         {
             get => _fileCaching;
             set
             {
                 _fileCaching = value;
-                _options[nameof(FileCaching)] = FileCachingOptionString(_fileCaching);
+                _options[nameof(FileCaching)] = _fileCaching.ToString();
             }
         }
 
-        uint _networkCaching;
+        int _networkCaching;
         /// <summary>
         /// Caching value for network resources, in milliseconds [0 .. 60000ms]
         /// </summary>
-        public uint NetworkCaching
+        public int NetworkCaching
         {
             get => _networkCaching;
             set
             {
                 _networkCaching = value;
-                _options[nameof(NetworkCaching)] = NetworkCachingOptionString(_networkCaching);
+                _options[nameof(NetworkCaching)] = _networkCaching.ToString();
             }
         }
 
@@ -99,16 +99,6 @@ namespace LibVLCSharp.Shared
 #endif
             }
 
-        }
-
-        private string FileCachingOptionString(uint fileCaching)
-        {
-            return ":file-caching=" + fileCaching;
-        }
-
-        private string NetworkCachingOptionString(uint networkCaching)
-        {
-            return ":network-caching=" + networkCaching;
         }
 
         /// <summary>

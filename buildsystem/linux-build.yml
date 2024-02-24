@@ -1,8 +1,0 @@
-steps:
-- template: base-template.yml
- 
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet build'
-  inputs:
-    projects: src/LibVLCSharp/LibVLCSharp.csproj
-    arguments: '-c Release'
