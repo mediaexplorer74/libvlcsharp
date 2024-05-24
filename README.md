@@ -1,35 +1,31 @@
- # LibVLCSharp for UWP (W10M) v1.0.1.0
-
-My fork of famous "VLCSharp" project for my own micro-RnD...
-
-
-## Screenshots
-![x64](/Images/shot01.png)
-![ARM](/Images/shot02.png)
+# LibVLCSharp for UWP (W10M) v1.0.2.0
 
 ## About
-The original WinBeta_Video is a very simple Windows 10 app that displays and plays YouTube videos 
-from the WinBeta YouTube channel.
-WinBeta Video requires the YouTube .NET API, and both MyToolkit and MyToolkit Extended (For playing YouTube Videos).
-So, I'll try to fix all "Video not playing" issues.
+My fork of famous "VLCSharp" project for my own micro-RnD...
+
+Goal: research W10M 1607 (14393) and W10 "Astoria" (10240) VLC lib compatibility.
+
+## Screenshots
+![x64, Win11Tiny](/Images/shot01.png)
+![ARM, L640](/Images/shot02.png)
 
 
 ## Status
-- Downshifted from DX11 to DX9 (hellow, my oooldest 14-year Sony Vaio notebook )))
-- [Test online video](https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4) seems to be ok (on PC & WinPhone).
-
+- VLCLib "downshifted" from DX11 to DX9 (hello, my oooldest 14-year Sony Vaio notebook, how are you? :)))
+- [Test online video](https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4) seems to be ok (on PC & WinPhone) !
 
 ## Tech moments
-- UWP platform (targets: x86, x64, ARM)
+- UWP platform (tested targets: x64 and ARM)
 - Win. SDK build: 19041
-- Min. Win. SDK build: 15063
+- Min. Win. SDK build: 14393
 
 
 ## To Do
-* Research not included LibVLC C++ uwp code...
+* Research not included LibVLC C++ uwp code... Goal: win sdk 10240 compatibility =)) 
 
-## Reference(s)
-https://github.com/videolan/libvlcsharp Original "VLCSharp library" project
+## License / Reference(s)
+- MIT
+- https://github.com/videolan/libvlcsharp Original "VLCSharp library" project
 
 ## ..
 

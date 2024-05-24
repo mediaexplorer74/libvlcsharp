@@ -5,7 +5,7 @@
     <Description>LibVLCSharp is a cross-platform audio and video API for .NET platform.</Description>
     <TargetFrameworks>netstandard1.4</TargetFrameworks>
     <TargetFrameworks Condition="!$([MSBuild]::IsOsPlatform('Linux'))">$(TargetFrameworks)</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);uap10.0.15063</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);uap10.0.14393</TargetFrameworks>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeAWindow</TargetsForTfmSpecificBuildOutput>
     <RootNamespace>LibVLCSharp</RootNamespace>
     <NeutralLanguage>en</NeutralLanguage>
@@ -23,10 +23,6 @@
     <PackageReleaseNotes>https://code.videolan.org/videolan/LibVLCSharp/blob/master/NEWS</PackageReleaseNotes>
     <PackageTags>libvlc;vlc;videolan;native;c/c++;video;audio;player;media;mediaplayer;codec;ffmpeg;xamarin;graphics;ios;android;linux;windows;macos;cross-platform</PackageTags>
   </PropertyGroup>
-  <PropertyGroup Condition="$(UNITY_ANDROID)=='true'">
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <DefineConstants>$(DefineConstants);UNITY_ANDROID</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition="$(NETSTANDARD_ONLY)=='true'">
     <TargetFrameworks>netstandard2.0;netstandard1.1</TargetFrameworks>
   </PropertyGroup>
@@ -34,23 +30,10 @@
     <Compile Remove="Platforms\**\*.cs" />
     <None Include="Platforms\**\*.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('MonoAndroid'))">
-    <Compile Include="Platforms\Android\**\*.cs" />
-    <ProjectReference Include="..\LibVLCSharp.Android.AWindow\LibVLCSharp.Android.AWindow.csproj" PrivateAssets="All" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('Xamarin.iOS'))">
-    <Compile Include="Platforms\iOS\**\*.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('Xamarin.Mac'))">
-    <Compile Include="Platforms\Mac\**\*.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('Xamarin.TVOS'))">
-    <Compile Include="Platforms\tvOS\**\*.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
+	<!--ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     <PackageReference Include="Microsoft.Bcl.Async" Version="1.0.168" />
-  </ItemGroup>
+  </ItemGroup-->
   <ItemGroup Condition="$(TargetFramework.StartsWith('uap'))">
     <Compile Include="Platforms\UWP\**\*.cs" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
@@ -58,10 +41,5 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-  <Target Name="IncludeAWindow" Condition="$(TargetFramework.StartsWith('MonoAndroid'))">
-    <ItemGroup>
-      <BuildOutputInPackage Include="$(OutputPath)LibVLCSharp.Android.AWindow.dll" />
-    </ItemGroup>
-  </Target>
+  </ItemGroup> 
 </Project>
